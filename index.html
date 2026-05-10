@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Sistem POS Kasir Hello Coffee - Manajemen pesanan, pembayaran, dan laporan coffeeshop">
+  <title>Hello Coffee — POS System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ============ LOGIN SCREEN ============ -->
+  <div id="loginScreen" class="screen active">
+    <div class="login-bg">
+      <div class="login-card">
+        <div class="login-logo">
+          <span class="logo-icon">☕</span>
+          <h1>Hello Coffee</h1>
+          <p class="login-subtitle">Point of Sale System</p>
+        </div>
+        <div class="login-form">
+          <label for="loginUser">Pilih Kasir</label>
+          <select id="loginUser">
+            <!-- populated by JS -->
+          </select>
+          <label for="loginPin">PIN</label>
+          <div class="pin-input-group">
+            <input type="password" id="loginPin" maxlength="4" placeholder="• • • •" autocomplete="off">
+          </div>
+          <button id="btnLogin" class="btn-primary btn-login" onclick="handleLogin()">
+            <span>Masuk</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+          <p id="loginError" class="login-error"></p>
+        </div>
+        <div class="login-footer">
+          <span>v1.0</span>
+          <span>© 2026 Hello Coffee</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MAIN POS SCREEN ============ -->
+  <div id="posScreen" class="screen">
+    <!-- Top Bar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <span class="topbar-logo">☕</span>
+        <h2 class="topbar-brand">Hello Coffee</h2>
+        <span class="topbar-divider"></span>
+        <span id="topbarDate" class="topbar-date"></span>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-user" id="topbarUser">
+          <div class="user-avatar" id="userAvatar">K</div>
+          <div class="user-info">
+            <span class="user-name" id="userName">Kasir 1</span>
+            <span class="user-role" id="userRole">Kasir</span>
+          </div>
+        </div>
+        <button class="btn-icon" id="btnAdminPanel" onclick="showAdmin()" title="Admin Panel" style="display:none">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        </button>
+        <button class="btn-icon btn-danger-outline" onclick="handleLogout()" title="Logout">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="pos-layout">
+      <!-- LEFT: Menu Area -->
+      <main class="menu-area">
+        <!-- Order Type Tabs -->
+        <div class="order-type-bar">
+          <button class="order-type active" data-type="dinein" onclick="setOrderType('dinein', this)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 22h18M6 18v4M18 18v4M4 18h16a2 2 0 002-2v-2H2v2a2 2 0 002 2zM2 14h20M12 2C8.13 2 5 5.13 5 9v5h14V9c0-3.87-3.13-7-7-7z"/></svg>
+            Dine In
+          </button>
+          <button class="order-type" data-type="takeaway" onclick="setOrderType('takeaway', this)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0"/></svg>
+            Take Away
+          </button>
+        </div>
+
+        <!-- Search & Category -->
+        <div class="menu-controls">
+          <div class="search-box">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <input type="text" id="searchMenu" placeholder="Cari menu..." oninput="filterMenu()">
+          </div>
+        </div>
+        <div class="category-tabs" id="categoryTabs">
+          <!-- populated by JS -->
+        </div>
+
+        <!-- Product Grid -->
+        <div class="product-grid" id="productGrid">
+          <!-- populated by JS -->
+        </div>
+      </main>
+
+      <!-- RIGHT: Cart / Order -->
+      <aside class="cart-area">
+        <div class="cart-header">
+          <h3>Pesanan</h3>
+          <span class="cart-badge" id="cartBadge">0</span>
+          <button class="btn-text-danger" onclick="clearCart()" title="Kosongkan">Hapus Semua</button>
+        </div>
+
+        <div class="cart-customer">
+          <input type="text" id="customerName" placeholder="Nama pelanggan (opsional)">
+          <input type="text" id="tableNo" placeholder="No. Meja">
+        </div>
+
+        <div class="cart-items" id="cartItems">
+          <div class="cart-empty" id="cartEmpty">
+            <span class="cart-empty-icon">🛒</span>
+            <p>Belum ada pesanan</p>
+            <small>Pilih menu di sebelah kiri</small>
+          </div>
+        </div>
+
+        <div class="cart-summary" id="cartSummary" style="display:none">
+          <div class="summary-row">
+            <span>Subtotal</span>
+            <span id="subtotalText">Rp 0</span>
+          </div>
+          <div class="summary-row">
+            <span>Diskon</span>
+            <div class="discount-input">
+              <input type="number" id="discountInput" value="0" min="0" oninput="recalcCart()">
+              <select id="discountType" onchange="recalcCart()">
+                <option value="percent">%</option>
+                <option value="fixed">Rp</option>
+              </select>
+            </div>
+          </div>
+          <div class="summary-row">
+            <span>Pajak (10%)</span>
+            <span id="taxText">Rp 0</span>
+          </div>
+          <div class="summary-divider"></div>
+          <div class="summary-row total-row">
+            <span>Total</span>
+            <span id="totalText">Rp 0</span>
+          </div>
+          <button class="btn-primary btn-checkout" onclick="openCheckout()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>
+            Bayar Sekarang
+          </button>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- ============ CHECKOUT MODAL ============ -->
+  <div id="checkoutModal" class="modal-overlay" onclick="closeModal(event, 'checkoutModal')">
+    <div class="modal-content modal-checkout" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3>💳 Pembayaran</h3>
+        <button class="btn-close" onclick="closeModalById('checkoutModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="checkout-total-display">
+          <span>Total Pembayaran</span>
+          <strong id="checkoutTotal">Rp 0</strong>
+        </div>
+        <div class="payment-methods">
+          <label>Metode Bayar</label>
+          <div class="method-grid">
+            <button class="method-btn active" data-method="tunai" onclick="selectPayMethod('tunai', this)">
+              <span class="method-icon">💵</span>Tunai
+            </button>
+            <button class="method-btn" data-method="qris" onclick="selectPayMethod('qris', this)">
+              <span class="method-icon">📱</span>QRIS
+            </button>
+            <button class="method-btn" data-method="transfer" onclick="selectPayMethod('transfer', this)">
+              <span class="method-icon">🏦</span>Transfer
+            </button>
+            <button class="method-btn" data-method="kartu" onclick="selectPayMethod('kartu', this)">
+              <span class="method-icon">💳</span>Kartu
+            </button>
+          </div>
+        </div>
+        <div id="cashSection" class="cash-section">
+          <label>Uang Diterima</label>
+          <input type="number" id="cashReceived" placeholder="0" oninput="calcChange()">
+          <div class="quick-cash" id="quickCash">
+            <!-- populated by JS -->
+          </div>
+          <div class="change-display" id="changeDisplay" style="display:none">
+            <span>Kembalian</span>
+            <strong id="changeAmount">Rp 0</strong>
+          </div>
+        </div>
+        <div class="checkout-note">
+          <label>Catatan</label>
+          <textarea id="checkoutNote" rows="2" placeholder="Catatan khusus..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModalById('checkoutModal')">Batal</button>
+        <button class="btn-primary" id="btnProcessPayment" onclick="processPayment()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          Proses Pembayaran
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ RECEIPT MODAL ============ -->
+  <div id="receiptModal" class="modal-overlay" onclick="closeModal(event, 'receiptModal')">
+    <div class="modal-content modal-receipt" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3>🧾 Struk</h3>
+        <button class="btn-close" onclick="closeModalById('receiptModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="receipt-paper" id="receiptPaper">
+          <!-- generated by JS -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModalById('receiptModal'); clearCart();">Transaksi Baru</button>
+        <button class="btn-primary" onclick="printReceipt()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          Cetak Struk
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ VARIANT MODAL ============ -->
+  <div id="variantModal" class="modal-overlay" onclick="closeModal(event, 'variantModal')">
+    <div class="modal-content modal-variant" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3 id="variantTitle">Pilih Varian</h3>
+        <button class="btn-close" onclick="closeModalById('variantModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="variantOptions" class="variant-options"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ ADMIN PANEL ============ -->
+  <div id="adminScreen" class="screen">
+    <header class="topbar topbar-admin">
+      <div class="topbar-left">
+        <button class="btn-icon" onclick="hideAdmin()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </button>
+        <span class="topbar-logo">☕</span>
+        <h2 class="topbar-brand">Admin Panel</h2>
+      </div>
+      <div class="topbar-right">
+        <span id="adminDatetime" class="topbar-date"></span>
+      </div>
+    </header>
+    <div class="admin-layout">
+      <nav class="admin-sidebar">
+        <button class="admin-nav active" onclick="showAdminTab('dashboard', this)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+          Dashboard
+        </button>
+        <button class="admin-nav" onclick="showAdminTab('menu-mgmt', this)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          Manajemen Menu
+        </button>
+        <button class="admin-nav" onclick="showAdminTab('history', this)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Riwayat Transaksi
+        </button>
+        <button class="admin-nav" onclick="showAdminTab('reports', this)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          Laporan
+        </button>
+      </nav>
+      <div class="admin-content" id="adminContent">
+        <!-- Dashboard Tab -->
+        <div class="admin-tab active" id="tab-dashboard">
+          <h2 class="admin-title">Dashboard</h2>
+          <div class="stats-grid" id="statsGrid">
+            <!-- populated by JS -->
+          </div>
+          <div class="chart-section">
+            <h3>Penjualan Hari Ini</h3>
+            <div class="chart-placeholder" id="todayChart"></div>
+          </div>
+        </div>
+        <!-- Menu Management Tab -->
+        <div class="admin-tab" id="tab-menu-mgmt">
+          <div class="admin-tab-header">
+            <h2 class="admin-title">Manajemen Menu</h2>
+            <button class="btn-primary" onclick="openAddProduct()">+ Tambah Produk</button>
+          </div>
+          <div class="admin-table-wrap">
+            <table class="admin-table" id="menuTable">
+              <thead>
+                <tr>
+                  <th>Produk</th>
+                  <th>Kategori</th>
+                  <th>Harga</th>
+                  <th>Status</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="menuTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <!-- History Tab -->
+        <div class="admin-tab" id="tab-history">
+          <h2 class="admin-title">Riwayat Transaksi</h2>
+          <div class="admin-table-wrap">
+            <table class="admin-table" id="historyTable">
+              <thead>
+                <tr>
+                  <th>Invoice</th>
+                  <th>Tanggal</th>
+                  <th>Kasir</th>
+                  <th>Items</th>
+                  <th>Total</th>
+                  <th>Metode</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="historyTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <!-- Reports Tab -->
+        <div class="admin-tab" id="tab-reports">
+          <h2 class="admin-title">Laporan</h2>
+          <div class="report-cards" id="reportCards"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ ADD PRODUCT MODAL ============ -->
+  <div id="addProductModal" class="modal-overlay" onclick="closeModal(event, 'addProductModal')">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3 id="addProductTitle">Tambah Produk Baru</h3>
+        <button class="btn-close" onclick="closeModalById('addProductModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editProductId" value="">
+        <div class="form-group">
+          <label>Nama Produk</label>
+          <input type="text" id="prodName" placeholder="Contoh: Caramel Latte">
+        </div>
+        <div class="form-group">
+          <label>Kategori</label>
+          <select id="prodCategory"></select>
+        </div>
+        <div class="form-group">
+          <label>Harga (Rp)</label>
+          <input type="number" id="prodPrice" placeholder="0" min="0">
+        </div>
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="prodAvailable" checked> Tersedia
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModalById('addProductModal')">Batal</button>
+        <button class="btn-primary" onclick="saveProduct()">Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
