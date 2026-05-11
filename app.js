@@ -757,20 +757,54 @@ function showToast(msg, type = 'info') {
 
 // ==================== USER MGMT ====================
 function loadUsers() {
-  document.getElementById('userTableBody').innerHTML = DB.users.map(u => `
-    <tr>
-      <td><strong>US-${u.id}</strong></td>
-      <td>${u.name}</td>
-      <td style="text-transform:capitalize">${u.role}</td>
-      <td>${u.pin}</td>
-      <td><span class="badge ${u.is_active ? 'badge-success' : 'badge-danger'}">${u.is_active ? 'Aktif' : 'Nonaktif'}</span></td>
+  document.getElementById('userTableBody').innerHTML = DB.users.map(u => {
+    const avatar = u.name.charAt(0).toUpperCase();
+    const rolePill = u.role === 'admin' 
+      ? '<span style="background:rgba(200,149,108,0.15); color:var(--accent); padding:4px 10px; border-radius:100px; font-size:11px; font-weight:600; letter-spacing:0.5px;">Admin</span>' 
+      : '<span style="background:rgba(255,255,255,0.1); color:var(--text2); padding:4px 10px; border-radius:100px; font-size:11px; font-weight:600; letter-spacing:0.5px;">Kasir</span>';
+    const statusPill = u.is_active 
+      ? '<span style="background:rgba(16,124,65,0.2); color:#4ade80; padding:4px 10px; border-radius:100px; font-size:11px; font-weight:600;">Aktif</span>' 
+      : '<span style="background:rgba(255,255,255,0.05); color:var(--text3); padding:4px 10px; border-radius:100px; font-size:11px; font-weight:600;">Nonaktif</span>';
+      
+    return `
+    <tr style="transition:background 0.2s">
+      <td style="color:var(--text3)">US-${u.id}</td>
       <td>
-        <button class="btn-sm ${u.is_active ? 'btn-sm-danger' : 'btn-primary'}" onclick="toggleUserStatus(${u.id})">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="width:36px; height:36px; border-radius:50%; background:var(--bg-input); display:flex; align-items:center; justify-content:center; font-weight:700; color:var(--text2); border:1px solid var(--border2)">${avatar}</div>
+          <strong style="font-size:14px; font-weight:600; color:var(--text)">${u.name}</strong>
+        </div>
+      </td>
+      <td>${rolePill}</td>
+      <td>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span id="pin-display-${u.id}" style="font-family:monospace; font-size:14px; letter-spacing:2px; color:var(--text2)">••••</span>
+          <button onclick="togglePinVisibility(${u.id}, '${u.pin}')" style="background:none; border:none; color:var(--text3); cursor:pointer; display:flex; align-items:center; padding:0" title="Tampilkan PIN">
+            <svg id="pin-icon-${u.id}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          </button>
+        </div>
+      </td>
+      <td>${statusPill}</td>
+      <td>
+        <button class="btn-sm" style="background:transparent; border:1px solid ${u.is_active ? 'var(--border2)' : 'var(--accent)'}; color:${u.is_active ? 'var(--text3)' : 'var(--accent)'}; font-weight:600; border-radius:6px; transition:0.2s" onclick="toggleUserStatus(${u.id})" onmouseover="this.style.background='${u.is_active ? 'rgba(227,36,43,0.1)' : 'rgba(200,149,108,0.1)'}'; this.style.color='${u.is_active ? 'var(--danger)' : 'var(--accent)'}'; this.style.borderColor='${u.is_active ? 'var(--danger)' : 'var(--accent)'}'" onmouseout="this.style.background='transparent'; this.style.color='${u.is_active ? 'var(--text3)' : 'var(--accent)'}'; this.style.borderColor='${u.is_active ? 'var(--border2)' : 'var(--accent)'}'">
           ${u.is_active ? 'Nonaktifkan' : 'Aktifkan'}
         </button>
       </td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
+}
+
+function togglePinVisibility(id, pin) {
+  const el = document.getElementById('pin-display-' + id);
+  const icon = document.getElementById('pin-icon-' + id);
+  if (el.textContent === '••••') {
+    el.textContent = pin;
+    icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+  } else {
+    el.textContent = '••••';
+    icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+  }
 }
 
 function openUserModal() {
