@@ -359,6 +359,7 @@ function showAdmin() {
   loadMenuTable();
   loadHistory();
   loadReports();
+  loadUsers();
 }
 
 function hideAdmin() { switchScreen('posScreen'); }
@@ -752,4 +753,69 @@ function showToast(msg, type = 'info') {
   toast.innerHTML = `<span>${icons[type] || 'ℹ'}</span> ${msg}`;
   container.appendChild(toast);
   setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateX(40px)'; setTimeout(() => toast.remove(), 300); }, 3000);
+}
+
+// ==================== USER MGMT ====================
+function loadUsers() {
+  document.getElementById('userTableBody').innerHTML = DB.users.map(u => `
+    <tr>
+      <td><strong>US-${u.id}</strong></td>
+      <td>${u.name}</td>
+      <td style="text-transform:capitalize">${u.role}</td>
+      <td>${u.pin}</td>
+      <td><span class="badge ${u.is_active ? 'badge-success' : 'badge-danger'}">${u.is_active ? 'Aktif' : 'Nonaktif'}</span></td>
+      <td>
+        <button class="btn-sm ${u.is_active ? 'btn-sm-danger' : 'btn-primary'}" onclick="toggleUserStatus(${u.id})">
+          ${u.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function openUserModal() {
+  document.getElementById('newUserName').value = '';
+  document.getElementById('newUserPin').value = '';
+  document.getElementById('newUserRole').value = 'kasir';
+  openModal('userModal');
+}
+
+function saveUser() {
+  const name = document.getElementById('newUserName').value.trim();
+  const pin = document.getElementById('newUserPin').value.trim();
+  const role = document.getElementById('newUserRole').value;
+
+  if (!name || pin.length !== 4) {
+    showToast('Nama harus diisi dan PIN harus 4 angka!', 'error');
+    return;
+  }
+
+  DB.users.push({
+    id: DB.users.length + 1,
+    name: name,
+    role: role,
+    pin: pin,
+    is_active: true
+  });
+
+  showToast('Kasir baru berhasil ditambahkan!', 'success');
+  populateLoginUsers(); // Refresh login dropdown
+  loadUsers();          // Refresh admin table
+  closeModalById('userModal');
+}
+
+function toggleUserStatus(id) {
+  const u = DB.users.find(x => x.id === id);
+  if (!u) return;
+
+  // Prevent disabling the current admin if they are logged in
+  if (currentUser && u.id === currentUser.id) {
+    showToast('Anda tidak bisa menonaktifkan akun yang sedang digunakan!', 'error');
+    return;
+  }
+
+  u.is_active = !u.is_active;
+  showToast('Status kasir berhasil diubah!', 'success');
+  populateLoginUsers();
+  loadUsers();
 }
