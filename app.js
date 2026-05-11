@@ -562,16 +562,16 @@ function loadReports() {
       <div style="display:flex; flex-direction:column; gap:16px;">
         ${Object.entries(methCount).length ? Object.entries(methCount).map(([m,c]) => {
           const pct = Math.round((c/totalTxns)*100);
-          return \`
+          return `
             <div>
               <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:13px; font-weight:600; color:var(--text2); text-transform:capitalize;">
-                <span>\${m} (\${c}x)</span><span>\${pct}%</span>
+                <span>${m} (${c}x)</span><span>${pct}%</span>
               </div>
               <div style="width:100%; height:8px; background:var(--bg-input); border-radius:4px; overflow:hidden;">
-                <div style="width:\${pct}%; height:100%; background:var(--accent); border-radius:4px;"></div>
+                <div style="width:${pct}%; height:100%; background:var(--accent); border-radius:4px;"></div>
               </div>
             </div>
-          \`;
+          `;
         }).join('') : '<div style="color:var(--text3); font-size:13px;">Belum ada data</div>'}
       </div>
     </div>
