@@ -1,18 +1,23 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Sistem POS Kasir Hello Coffee - Manajemen pesanan, pembayaran, dan laporan coffeeshop">
+  <meta name="description"
+    content="Sistem POS Kasir Hello Coffee - Manajemen pesanan, pembayaran, dan laporan coffeeshop">
   <title>Hello Coffee — POS System</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <!-- Export Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 </head>
+
 <body>
 
   <!-- ============ LOGIN SCREEN ============ -->
@@ -20,7 +25,8 @@
     <div class="login-bg">
       <div class="login-card">
         <div class="login-logo">
-          <img src="Hello.png" alt="Logo" class="logo-icon" style="height: 100px; width: auto; margin: 0 auto; display: block; filter: drop-shadow(0 0 15px rgba(200,149,108,0.4));">
+          <img src="Hello.png" alt="Logo" class="logo-icon"
+            style="height: 100px; width: auto; margin: 0 auto; display: block; filter: drop-shadow(0 0 15px rgba(200,149,108,0.4));">
           <h1>Hello Coffee</h1>
           <p class="login-subtitle">Point of Sale System</p>
         </div>
@@ -35,13 +41,15 @@
           </div>
           <button id="btnLogin" class="btn-primary btn-login" onclick="handleLogin()">
             <span>Masuk</span>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
           </button>
           <p id="loginError" class="login-error"></p>
         </div>
         <div class="login-footer">
           <span>v1.0</span>
-          <span>© 2026 Hello Coffee</span>
+          <span>© 2026 Syafiq Siregar</span>
         </div>
       </div>
     </div>
@@ -66,10 +74,17 @@
           </div>
         </div>
         <button class="btn-icon" id="btnAdminPanel" onclick="showAdmin()" title="Admin Panel" style="display:none">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7" rx="1" />
+            <rect x="14" y="3" width="7" height="7" rx="1" />
+            <rect x="3" y="14" width="7" height="7" rx="1" />
+            <rect x="14" y="14" width="7" height="7" rx="1" />
+          </svg>
         </button>
         <button class="btn-icon btn-danger-outline" onclick="handleLogout()" title="Logout">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" />
+          </svg>
         </button>
       </div>
     </header>
@@ -80,7 +95,10 @@
         <!-- Search & Category -->
         <div class="menu-controls">
           <div class="search-box">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8" />
+              <path d="M21 21l-4.35-4.35" />
+            </svg>
             <input type="text" id="searchMenu" placeholder="Cari menu..." oninput="filterMenu()">
           </div>
         </div>
@@ -140,17 +158,27 @@
             <span id="totalText">Rp 0</span>
           </div>
           <div class="order-type-bar" style="margin-top: 16px; margin-bottom: 0;">
-            <button class="order-type active" style="flex: 1; justify-content: center;" data-type="dinein" onclick="setOrderType('dinein', this)">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 22h18M6 18v4M18 18v4M4 18h16a2 2 0 002-2v-2H2v2a2 2 0 002 2zM2 14h20M12 2C8.13 2 5 5.13 5 9v5h14V9c0-3.87-3.13-7-7-7z"/></svg>
+            <button class="order-type active" style="flex: 1; justify-content: center;" data-type="dinein"
+              onclick="setOrderType('dinein', this)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path
+                  d="M3 22h18M6 18v4M18 18v4M4 18h16a2 2 0 002-2v-2H2v2a2 2 0 002 2zM2 14h20M12 2C8.13 2 5 5.13 5 9v5h14V9c0-3.87-3.13-7-7-7z" />
+              </svg>
               Dine In
             </button>
-            <button class="order-type" style="flex: 1; justify-content: center;" data-type="takeaway" onclick="setOrderType('takeaway', this)">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0"/></svg>
+            <button class="order-type" style="flex: 1; justify-content: center;" data-type="takeaway"
+              onclick="setOrderType('takeaway', this)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0" />
+              </svg>
               Take Away
             </button>
           </div>
           <button class="btn-primary btn-checkout" onclick="openCheckout()">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="1" y="4" width="22" height="16" rx="2" />
+              <path d="M1 10h22" />
+            </svg>
             Bayar Sekarang
           </button>
         </div>
@@ -206,7 +234,10 @@
       <div class="modal-footer">
         <button class="btn-secondary" onclick="closeModalById('checkoutModal')">Batal</button>
         <button class="btn-primary" id="btnProcessPayment" onclick="processPayment()">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
+          </svg>
           Proses Pembayaran
         </button>
       </div>
@@ -228,7 +259,11 @@
       <div class="modal-footer">
         <button class="btn-secondary" onclick="closeModalById('receiptModal'); clearCart();">Transaksi Baru</button>
         <button class="btn-primary" onclick="printReceipt()">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 6 2 18 2 18 9" />
+            <path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2" />
+            <rect x="6" y="14" width="12" height="8" />
+          </svg>
           Cetak Struk
         </button>
       </div>
@@ -253,7 +288,9 @@
     <header class="topbar topbar-admin">
       <div class="topbar-left">
         <button class="btn-icon" onclick="hideAdmin()">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5M12 19l-7-7 7-7" />
+          </svg>
         </button>
         <img src="Hello.png" alt="Logo" class="topbar-logo" style="height: 28px; width: auto;">
         <h2 class="topbar-brand">Admin Panel</h2>
@@ -265,23 +302,42 @@
     <div class="admin-layout">
       <nav class="admin-sidebar">
         <button class="admin-nav active" onclick="showAdminTab('dashboard', this)">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="9" rx="1" />
+            <rect x="14" y="3" width="7" height="5" rx="1" />
+            <rect x="14" y="12" width="7" height="9" rx="1" />
+            <rect x="3" y="16" width="7" height="5" rx="1" />
+          </svg>
           Dashboard
         </button>
         <button class="admin-nav" onclick="showAdminTab('menu-mgmt', this)">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+          </svg>
           Manajemen Menu
         </button>
         <button class="admin-nav" onclick="showAdminTab('history', this)">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
           Riwayat Transaksi
         </button>
         <button class="admin-nav" onclick="showAdminTab('reports', this)">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="20" x2="18" y2="10" />
+            <line x1="12" y1="20" x2="12" y2="4" />
+            <line x1="6" y1="20" x2="6" y2="14" />
+          </svg>
           Laporan
         </button>
         <button class="admin-nav" onclick="showAdminTab('users', this)">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
           Data Kasir
         </button>
       </nav>
@@ -323,8 +379,10 @@
           <div class="admin-tab-header">
             <h2 class="admin-title">Riwayat Transaksi</h2>
             <div style="display:flex;gap:10px;">
-              <button class="btn-primary" style="background:var(--success, #107c41)" onclick="exportHistoryExcel()">📊 Excel</button>
-              <button class="btn-primary" style="background:var(--danger, #e3242b)" onclick="exportHistoryPDF()">📄 PDF</button>
+              <button class="btn-primary" style="background:var(--success, #107c41)" onclick="exportHistoryExcel()">📊
+                Excel</button>
+              <button class="btn-primary" style="background:var(--danger, #e3242b)" onclick="exportHistoryPDF()">📄
+                PDF</button>
             </div>
           </div>
           <div class="admin-table-wrap">
@@ -354,19 +412,37 @@
               <div style="font-size:12px; color:var(--text3);">Periode: Hari Ini</div>
             </div>
             <div style="display:flex; gap:12px;">
-              <button class="btn-outline" style="border:1px solid var(--border2); background:transparent; color:var(--text2); display:flex; align-items:center; gap:6px; transition:0.2s" onmouseover="this.style.borderColor='#107c41'; this.style.color='#4ade80'" onmouseout="this.style.borderColor='var(--border2)'; this.style.color='var(--text2)'" onclick="exportReportExcel()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+              <button class="btn-outline"
+                style="border:1px solid var(--border2); background:transparent; color:var(--text2); display:flex; align-items:center; gap:6px; transition:0.2s"
+                onmouseover="this.style.borderColor='#107c41'; this.style.color='#4ade80'"
+                onmouseout="this.style.borderColor='var(--border2)'; this.style.color='var(--text2)'"
+                onclick="exportReportExcel()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="8" y1="13" x2="16" y2="13"></line>
+                  <line x1="8" y1="17" x2="16" y2="17"></line>
+                  <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
                 Excel
               </button>
-              <button class="btn-outline" style="border:1px solid var(--border2); background:transparent; color:var(--text2); display:flex; align-items:center; gap:6px; transition:0.2s" onmouseover="this.style.borderColor='#e3242b'; this.style.color='#f87171'" onmouseout="this.style.borderColor='var(--border2)'; this.style.color='var(--text2)'" onclick="exportReportPDF()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M9 15v-6M12 15v-6M15 15v-6"></path></svg>
+              <button class="btn-outline"
+                style="border:1px solid var(--border2); background:transparent; color:var(--text2); display:flex; align-items:center; gap:6px; transition:0.2s"
+                onmouseover="this.style.borderColor='#e3242b'; this.style.color='#f87171'"
+                onmouseout="this.style.borderColor='var(--border2)'; this.style.color='var(--text2)'"
+                onclick="exportReportPDF()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <path d="M9 15v-6M12 15v-6M15 15v-6"></path>
+                </svg>
                 PDF
               </button>
             </div>
           </div>
           <div class="report-cards" id="reportCards"></div>
         </div>
-        
+
         <!-- Users Tab -->
         <div class="admin-tab" id="tab-users">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
@@ -402,21 +478,26 @@
       <div class="modal-body">
         <div class="form-group" style="margin-bottom:12px;">
           <label style="display:block;margin-bottom:4px;font-size:12px;color:var(--text3)">Nama Kasir</label>
-          <input type="text" id="newUserName" placeholder="Masukkan nama..." style="width:100%;padding:10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg-input);color:var(--text);">
+          <input type="text" id="newUserName" placeholder="Masukkan nama..."
+            style="width:100%;padding:10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg-input);color:var(--text);">
         </div>
         <div class="form-group" style="margin-bottom:12px;">
           <label style="display:block;margin-bottom:4px;font-size:12px;color:var(--text3)">PIN (4 Angka)</label>
-          <input type="number" id="newUserPin" placeholder="Misal: 1234" style="width:100%;padding:10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg-input);color:var(--text);">
+          <input type="number" id="newUserPin" placeholder="Misal: 1234"
+            style="width:100%;padding:10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg-input);color:var(--text);">
         </div>
         <div class="form-group" style="margin-bottom:16px;">
           <label style="display:block;margin-bottom:4px;font-size:12px;color:var(--text3)">Peran (Role)</label>
-          <select id="newUserRole" style="width:100%;padding:10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg-input);color:var(--text);">
+          <select id="newUserRole"
+            style="width:100%;padding:10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg-input);color:var(--text);">
             <option value="kasir">Kasir</option>
             <option value="admin">Admin</option>
           </select>
         </div>
         <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px">
-          <button class="btn-outline" style="padding:8px 16px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text)" onclick="closeModalById('userModal')">Batal</button>
+          <button class="btn-outline"
+            style="padding:8px 16px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text)"
+            onclick="closeModalById('userModal')">Batal</button>
           <button class="btn-primary" style="padding:8px 16px;border-radius:6px" onclick="saveUser()">Simpan</button>
         </div>
       </div>
@@ -463,4 +544,5 @@
   <script src="data.js"></script>
   <script src="app.js"></script>
 </body>
+
 </html>
