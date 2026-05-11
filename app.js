@@ -433,15 +433,40 @@ function loadMenuTable() {
 function loadHistory() {
   const txns = [...DB.transactions].reverse();
   document.getElementById('historyTableBody').innerHTML = txns.length === 0 ?
-    '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:40px">Belum ada transaksi</td></tr>' :
+    '<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:40px">Belum ada transaksi</td></tr>' :
     txns.map(t => {
       const d = new Date(t.created_at);
       const ds = d.toLocaleDateString('id-ID',{day:'2-digit',month:'short'}) + ' ' + d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
       const itemCount = t.items.reduce((s,i) => s+i.qty, 0);
       const tipe = t.order_type === 'dinein' ? 'Dine In' : 'Take Away';
+      const actionBtn = t.status === 'completed' 
+        ? `<button class="btn-sm btn-sm-danger" onclick="cancelTransaction(${t.id})">Batalkan</button>`
+        : `<span style="font-size:12px;color:var(--text3)">Dibatalkan</span>`;
       return `<tr><td><strong>${t.invoice_no}</strong></td><td>${ds}</td><td>${t.user_name}</td><td>${tipe}</td><td>${itemCount} item</td><td>${formatRupiah(t.total)}</td><td>${t.payment_method}</td>
-      <td><span class="badge ${t.status==='completed'?'badge-success':'badge-danger'}">${t.status}</span></td></tr>`;
+      <td><span class="badge ${t.status==='completed'?'badge-success':'badge-danger'}">${t.status}</span></td><td>${actionBtn}</td></tr>`;
     }).join('');
+}
+
+function cancelTransaction(txnId) {
+  const txn = DB.transactions.find(t => t.id === txnId);
+  if (!txn || txn.status === 'cancelled') return;
+
+  const pin = prompt(`Masukkan PIN Admin untuk membatalkan transaksi ${txn.invoice_no}:`);
+  if (pin === null) return;
+
+  const admin = DB.users.find(u => u.role === 'admin' && u.pin === pin);
+  if (!admin) {
+    showToast('PIN Admin salah! Pembatalan ditolak.', 'error');
+    return;
+  }
+
+  if (confirm(`Yakin ingin membatalkan transaksi ${txn.invoice_no} senilai ${formatRupiah(txn.total)}?`)) {
+    txn.status = 'cancelled';
+    showToast('Transaksi berhasil dibatalkan!', 'success');
+    loadHistory();
+    loadDashboard();
+    loadReports();
+  }
 }
 
 function loadReports() {
