@@ -433,12 +433,13 @@ function loadMenuTable() {
 function loadHistory() {
   const txns = [...DB.transactions].reverse();
   document.getElementById('historyTableBody').innerHTML = txns.length === 0 ?
-    '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:40px">Belum ada transaksi</td></tr>' :
+    '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:40px">Belum ada transaksi</td></tr>' :
     txns.map(t => {
       const d = new Date(t.created_at);
       const ds = d.toLocaleDateString('id-ID',{day:'2-digit',month:'short'}) + ' ' + d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
       const itemCount = t.items.reduce((s,i) => s+i.qty, 0);
-      return `<tr><td><strong>${t.invoice_no}</strong></td><td>${ds}</td><td>${t.user_name}</td><td>${itemCount} item</td><td>${formatRupiah(t.total)}</td><td>${t.payment_method}</td>
+      const tipe = t.order_type === 'dinein' ? 'Dine In' : 'Take Away';
+      return `<tr><td><strong>${t.invoice_no}</strong></td><td>${ds}</td><td>${t.user_name}</td><td>${tipe}</td><td>${itemCount} item</td><td>${formatRupiah(t.total)}</td><td>${t.payment_method}</td>
       <td><span class="badge ${t.status==='completed'?'badge-success':'badge-danger'}">${t.status}</span></td></tr>`;
     }).join('');
 }
@@ -456,6 +457,10 @@ function loadReports() {
   const methCount = {};
   txns.forEach(t => { methCount[t.payment_method] = (methCount[t.payment_method]||0) + 1; });
 
+  // Order types
+  const typeCount = {};
+  txns.forEach(t => { typeCount[t.order_type] = (typeCount[t.order_type]||0) + 1; });
+
   document.getElementById('reportCards').innerHTML = `
     <div class="report-card"><h4>📊 Ringkasan</h4><ul class="report-list">
       <li><span>Total Pendapatan</span><span class="rl-val">${formatRupiah(totalRev)}</span></li>
@@ -465,13 +470,12 @@ function loadReports() {
     <div class="report-card"><h4>🏆 Produk Terlaris</h4><ul class="report-list">
       ${topProds.length ? topProds.map(([n,q]) => `<li><span>${n}</span><span class="rl-val">${q}x</span></li>`).join('') : '<li><span>Belum ada data</span><span></span></li>'}
     </ul></div>
+    <div class="report-card"><h4>🍽️ Tipe Pesanan</h4><ul class="report-list">
+      <li><span>Dine In</span><span class="rl-val">${typeCount['dinein'] || 0}x</span></li>
+      <li><span>Take Away</span><span class="rl-val">${typeCount['takeaway'] || 0}x</span></li>
+    </ul></div>
     <div class="report-card"><h4>💳 Metode Pembayaran</h4><ul class="report-list">
       ${Object.entries(methCount).map(([m,c]) => `<li><span>${m}</span><span class="rl-val">${c}x</span></li>`).join('') || '<li><span>Belum ada data</span><span></span></li>'}
-    </ul></div>
-    <div class="report-card"><h4>📅 Info</h4><ul class="report-list">
-      <li><span>Total Produk</span><span class="rl-val">${DB.products.length}</span></li>
-      <li><span>Kategori</span><span class="rl-val">${DB.categories.length}</span></li>
-      <li><span>User Aktif</span><span class="rl-val">${DB.users.filter(u=>u.is_active).length}</span></li>
     </ul></div>
   `;
 }
@@ -486,6 +490,7 @@ function exportHistoryExcel() {
       'Invoice': t.invoice_no,
       'Tanggal': dateStr,
       'Kasir': t.user_name,
+      'Tipe Pesanan': t.order_type === 'dinein' ? 'Dine In' : 'Take Away',
       'Jml Item': itemCount,
       'Subtotal': t.subtotal,
       'Diskon': t.discount,
@@ -512,7 +517,7 @@ function exportHistoryPDF() {
     const d = new Date(t.created_at);
     const dateStr = d.toLocaleDateString('id-ID',{day:'2-digit',month:'short', year:'numeric'}) + ' ' + d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
     const itemCount = t.items.reduce((s,i) => s+i.qty, 0);
-    return [t.invoice_no, dateStr, t.user_name, itemCount, formatRupiah(t.total), t.payment_method, t.status];
+    return [t.invoice_no, dateStr, t.user_name, t.order_type === 'dinein' ? 'Dine In' : 'Take Away', itemCount, formatRupiah(t.total), t.payment_method, t.status];
   });
 
   if (tableData.length === 0) { showToast('Tidak ada data transaksi!', 'error'); return; }
@@ -547,7 +552,7 @@ function exportHistoryPDF() {
     doc.text("Laporan Riwayat Transaksi", 105, 48, null, null, "center");
 
     doc.autoTable({
-      head: [['Invoice', 'Tanggal', 'Kasir', 'Items', 'Total', 'Metode', 'Status']],
+      head: [['Invoice', 'Tanggal', 'Kasir', 'Tipe', 'Items', 'Total', 'Metode', 'Status']],
       body: tableData,
       startY: 54,
       theme: 'grid',
