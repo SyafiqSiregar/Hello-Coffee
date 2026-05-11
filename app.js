@@ -319,7 +319,7 @@ function showReceipt(txn) {
   ).join('');
 
   el.innerHTML = `
-    <div class="r-center"><div class="r-brand">☕ Hello Coffee</div><div class="r-sub">Jl. Kopi Nikmat No. 123</div></div>
+    <div class="r-center"><img src="hello%20putih.png" alt="Logo" style="width: 54px; height: auto; margin: 0 auto 6px; display: block;"><div class="r-brand">Hello Coffee</div><div class="r-sub">Jl. Kopi Nikmat No. 123</div></div>
     <div class="r-line"></div>
     <div class="r-row"><span>No:</span><span>${txn.invoice_no}</span></div>
     <div class="r-row"><span>Tanggal:</span><span>${dateStr}</span></div>
@@ -349,7 +349,7 @@ function printReceipt() {
   const w = window.open('', '_blank', 'width=400,height=600');
   w.document.write(`<html><head><title>Struk</title><style>body{font-family:'Courier New',monospace;font-size:12px;padding:10px;max-width:300px;margin:0 auto}.r-center{text-align:center}.r-brand{font-size:18px;font-weight:700}.r-sub{font-size:10px;color:#666;margin-bottom:12px}.r-line{border-top:1px dashed #ccc;margin:8px 0}.r-row{display:flex;justify-content:space-between;padding:2px 0}.r-item{padding:3px 0}.r-item-name{font-weight:600}.r-total{font-size:16px;font-weight:700}.r-footer{font-size:10px;color:#888;margin-top:12px;text-align:center}@media print{body{margin:0;padding:5px}}</style></head><body>${content}</body></html>`);
   w.document.close();
-  w.print();
+  setTimeout(() => w.print(), 500);
 }
 
 // ==================== ADMIN ====================
@@ -508,8 +508,6 @@ function exportHistoryPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
   
-  doc.text("Riwayat Transaksi - Hello Coffee", 14, 15);
-  
   const tableData = DB.transactions.map(t => {
     const d = new Date(t.created_at);
     const dateStr = d.toLocaleDateString('id-ID',{day:'2-digit',month:'short', year:'numeric'}) + ' ' + d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
@@ -519,15 +517,49 @@ function exportHistoryPDF() {
 
   if (tableData.length === 0) { showToast('Tidak ada data transaksi!', 'error'); return; }
 
-  doc.autoTable({
-    head: [['Invoice', 'Tanggal', 'Kasir', 'Items', 'Total', 'Metode', 'Status']],
-    body: tableData,
-    startY: 20,
-    theme: 'grid',
-    styles: { fontSize: 8 }
-  });
-  
-  doc.save("Riwayat_Transaksi_HelloCoffee.pdf");
+  const processPDF = (img) => {
+    // KOP SURAT
+    if (img) {
+      doc.addImage(img, 'PNG', 14, 12, 24, 24);
+      doc.setFontSize(22);
+      doc.setFont("helvetica", "bold");
+      doc.text("HELLO COFFEE", 42, 20);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text("Jl. Kopi Nikmat No. 123, Jakarta Selatan", 42, 26);
+      doc.text("Telp: 0812-3456-7890 | Email: hello@coffee.com", 42, 31);
+    } else {
+      doc.setFontSize(22);
+      doc.setFont("helvetica", "bold");
+      doc.text("HELLO COFFEE", 14, 20);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text("Jl. Kopi Nikmat No. 123, Jakarta Selatan", 14, 26);
+      doc.text("Telp: 0812-3456-7890 | Email: hello@coffee.com", 14, 31);
+    }
+    
+    // Garis Kop
+    doc.setLineWidth(0.5);
+    doc.line(14, 38, 196, 38);
+    
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Laporan Riwayat Transaksi", 105, 48, null, null, "center");
+
+    doc.autoTable({
+      head: [['Invoice', 'Tanggal', 'Kasir', 'Items', 'Total', 'Metode', 'Status']],
+      body: tableData,
+      startY: 54,
+      theme: 'grid',
+      styles: { fontSize: 8 }
+    });
+    doc.save("Riwayat_Transaksi_HelloCoffee.pdf");
+  };
+
+  const img = new Image();
+  img.src = 'hello%20putih.png';
+  img.onload = () => processPDF(img);
+  img.onerror = () => processPDF(null);
 }
 
 function exportReportExcel() {
@@ -565,27 +597,64 @@ function exportReportPDF() {
   
   const totalRev = txns.reduce((s,t) => s+t.total, 0);
   
-  doc.text("Laporan Penjualan - Hello Coffee", 14, 15);
-  doc.setFontSize(10);
-  doc.text(`Total Pendapatan: ${formatRupiah(totalRev)}`, 14, 25);
-  doc.text(`Total Transaksi: ${txns.length}`, 14, 30);
-  doc.text(`Rata-rata Transaksi: ${formatRupiah(Math.round(totalRev/txns.length))}`, 14, 35);
-  
-  // Top products
-  const prodCount = {};
-  txns.forEach(t => t.items.forEach(i => { const k = i.name; prodCount[k] = (prodCount[k]||0) + i.qty; }));
-  const topProds = Object.entries(prodCount).sort((a,b) => b[1]-a[1]).map(p => [p[0], p[1] + 'x']);
+  const processPDF = (img) => {
+    // KOP SURAT
+    if (img) {
+      doc.addImage(img, 'PNG', 14, 12, 24, 24);
+      doc.setFontSize(22);
+      doc.setFont("helvetica", "bold");
+      doc.text("HELLO COFFEE", 42, 20);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text("Jl. Kopi Nikmat No. 123, Jakarta Selatan", 42, 26);
+      doc.text("Telp: 0812-3456-7890 | Email: hello@coffee.com", 42, 31);
+    } else {
+      doc.setFontSize(22);
+      doc.setFont("helvetica", "bold");
+      doc.text("HELLO COFFEE", 14, 20);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text("Jl. Kopi Nikmat No. 123, Jakarta Selatan", 14, 26);
+      doc.text("Telp: 0812-3456-7890 | Email: hello@coffee.com", 14, 31);
+    }
+    
+    // Garis Kop
+    doc.setLineWidth(0.5);
+    doc.line(14, 38, 196, 38);
+    
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Laporan Penjualan Keseluruhan", 105, 48, null, null, "center");
+    
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Total Pendapatan: ${formatRupiah(totalRev)}`, 14, 58);
+    doc.text(`Total Transaksi: ${txns.length}`, 14, 64);
+    doc.text(`Rata-rata Transaksi: ${formatRupiah(Math.round(totalRev/txns.length))}`, 14, 70);
+    
+    // Top products
+    const prodCount = {};
+    txns.forEach(t => t.items.forEach(i => { const k = i.name; prodCount[k] = (prodCount[k]||0) + i.qty; }));
+    const topProds = Object.entries(prodCount).sort((a,b) => b[1]-a[1]).map(p => [p[0], p[1] + 'x']);
 
-  doc.text("Produk Terlaris:", 14, 45);
-  doc.autoTable({
-    head: [['Nama Produk', 'Jumlah Terjual']],
-    body: topProds,
-    startY: 50,
-    theme: 'grid',
-    styles: { fontSize: 8 }
-  });
-  
-  doc.save("Laporan_Penjualan_HelloCoffee.pdf");
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("Produk Terlaris:", 14, 82);
+    doc.autoTable({
+      head: [['Nama Produk', 'Jumlah Terjual']],
+      body: topProds,
+      startY: 86,
+      theme: 'grid',
+      styles: { fontSize: 8 }
+    });
+    
+    doc.save("Laporan_Penjualan_HelloCoffee.pdf");
+  };
+
+  const img = new Image();
+  img.src = 'hello%20putih.png';
+  img.onload = () => processPDF(img);
+  img.onerror = () => processPDF(null);
 }
 
 // ==================== PRODUCT MGMT ====================

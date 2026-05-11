@@ -30,15 +30,15 @@ button{cursor:pointer;border:none;background:none;color:var(--text)}
 .login-bg{flex:1;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1a1008 0%,#0f0f0f 50%,#0d1117 100%);position:relative;overflow:hidden}
 .login-bg::before{content:'';position:absolute;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(200,149,108,.08),transparent 70%);top:-100px;right:-100px}
 .login-bg::after{content:'';position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(200,149,108,.05),transparent 70%);bottom:-80px;left:-80px}
-.login-card{background:var(--bg-card);border:1px solid var(--border2);border-radius:20px;padding:48px 40px;width:380px;max-width:90vw;box-shadow:var(--shadow);position:relative;z-index:1;animation:fadeUp .6s ease}
+.login-card{background:var(--bg-card);border:1px solid var(--border2);border-radius:24px;padding:56px 48px;width:460px;max-width:90vw;box-shadow:0 16px 48px rgba(0,0,0,.5);position:relative;z-index:1;animation:fadeUp .6s ease;text-align:center;margin:0 auto}
 @keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
 .login-logo{text-align:center;margin-bottom:32px}
 .logo-icon{font-size:48px;display:block;margin-bottom:8px;filter:drop-shadow(0 0 20px rgba(200,149,108,.3))}
-.login-logo h1{font-family:'Playfair Display',serif;font-size:28px;color:var(--accent-light);letter-spacing:1px}
+.login-logo h1{font-family:'Playfair Display',serif;font-size:36px;color:var(--accent-light);letter-spacing:1.5px;margin-top:12px}
 .login-subtitle{color:var(--text2);font-size:13px;margin-top:4px;letter-spacing:2px;text-transform:uppercase}
 .login-form{display:flex;flex-direction:column;gap:14px}
 .login-form label{font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:1px}
-.pin-input-group input{text-align:center;font-size:24px;letter-spacing:12px;padding:14px}
+.pin-input-group input{text-align:center;font-size:32px;letter-spacing:16px;padding:16px;border-radius:12px;margin-bottom:8px}
 .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;padding:12px 24px;border-radius:var(--radius-sm);font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;transition:var(--transition);width:100%}
 .btn-primary:hover{filter:brightness(1.1);transform:translateY(-1px);box-shadow:0 4px 16px rgba(200,149,108,.3)}
 .btn-primary:active{transform:translateY(0)}
@@ -206,14 +206,15 @@ button{cursor:pointer;border:none;background:none;color:var(--text)}
 
 /* ========== STATS GRID ========== */
 .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
-.stat-card{background:var(--bg-card2);border:1px solid var(--border2);border-radius:var(--radius);padding:20px;position:relative;overflow:hidden}
+.stat-card{background:var(--bg-card2);border:1px solid var(--border2);border-radius:var(--radius);padding:24px;position:relative;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.15);transition:transform .2s ease,box-shadow .2s ease}
+.stat-card:hover{transform:translateY(-5px);box-shadow:0 12px 32px rgba(0,0,0,.3)}
 .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
 .stat-card:nth-child(1)::before{background:var(--accent)}
 .stat-card:nth-child(2)::before{background:var(--success)}
 .stat-card:nth-child(3)::before{background:var(--info)}
 .stat-card:nth-child(4)::before{background:var(--warning)}
 .stat-label{font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
-.stat-value{font-size:28px;font-weight:800}
+.stat-value{font-size:32px;font-weight:800;margin:8px 0}
 .stat-sub{font-size:11px;color:var(--text3);margin-top:4px}
 
 /* ========== ADMIN TABLE ========== */
@@ -238,7 +239,7 @@ button{cursor:pointer;border:none;background:none;color:var(--text)}
 
 /* ========== CHART ========== */
 .chart-section h3{font-size:16px;font-weight:700;margin-bottom:16px}
-.chart-placeholder{background:var(--bg-card2);border:1px solid var(--border2);border-radius:var(--radius);padding:24px;min-height:200px;display:flex;align-items:flex-end;gap:6px}
+.chart-placeholder{background:var(--bg-card2);border:1px solid var(--border2);border-radius:var(--radius);padding:32px 24px 24px;min-height:280px;display:flex;align-items:flex-end;gap:8px;box-shadow:0 8px 24px rgba(0,0,0,.1)}
 .chart-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
 .chart-bar{width:100%;border-radius:4px 4px 0 0;background:linear-gradient(to top,var(--accent),var(--accent-light));transition:height .5s ease;min-height:4px}
 .chart-bar-label{font-size:9px;color:var(--text3);writing-mode:horizontal-tb}
