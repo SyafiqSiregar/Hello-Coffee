@@ -385,14 +385,40 @@ function loadDashboard() {
     <div class="stat-card"><div class="stat-label">Item Terjual</div><div class="stat-value">${totalItems}</div><div class="stat-sub">hari ini</div></div>
   `;
 
-  // Simple hourly chart
-  const hours = {};
-  for (let h = 7; h <= 22; h++) hours[h] = 0;
-  todayTxns.forEach(t => { const h = new Date(t.created_at).getHours(); if (hours[h] !== undefined) hours[h] += t.total; });
-  const maxVal = Math.max(...Object.values(hours), 1);
-  document.getElementById('todayChart').innerHTML = Object.entries(hours).map(([h, v]) => {
+  // Weekly chart (Current Week: Senin - Minggu)
+  const days = [];
+  const daysData = {};
+  
+  const todayDate = new Date();
+  const dayOfWeek = todayDate.getDay(); // 0 is Sunday, 1 is Monday...
+  const distanceToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  
+  const monday = new Date(todayDate);
+  monday.setDate(todayDate.getDate() - distanceToMonday);
+  
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const fullDateStr = d.toDateString();
+    const shortDay = d.toLocaleDateString('id-ID', { weekday: 'short' });
+    days.push({ full: fullDateStr, label: shortDay });
+    daysData[fullDateStr] = 0;
+  }
+
+  DB.transactions.forEach(t => {
+    if (t.status === 'completed') {
+      const dStr = new Date(t.created_at).toDateString();
+      if (daysData[dStr] !== undefined) {
+        daysData[dStr] += t.total;
+      }
+    }
+  });
+
+  const maxVal = Math.max(...Object.values(daysData), 1);
+  document.getElementById('todayChart').innerHTML = days.map(d => {
+    const v = daysData[d.full];
     const pct = (v / maxVal * 150) + 4;
-    return `<div class="chart-bar-wrap"><div class="chart-bar-val">${v > 0 ? (v/1000).toFixed(0)+'k' : ''}</div><div class="chart-bar" style="height:${pct}px"></div><div class="chart-bar-label">${h}:00</div></div>`;
+    return `<div class="chart-bar-wrap"><div class="chart-bar-val">${v > 0 ? (v/1000).toFixed(0)+'k' : ''}</div><div class="chart-bar" style="height:${pct}px"></div><div class="chart-bar-label">${d.label}</div></div>`;
   }).join('');
 }
 
@@ -448,6 +474,118 @@ function loadReports() {
       <li><span>User Aktif</span><span class="rl-val">${DB.users.filter(u=>u.is_active).length}</span></li>
     </ul></div>
   `;
+}
+
+// ==================== EXPORT REPORTS & HISTORY ====================
+function exportHistoryExcel() {
+  const txns = DB.transactions.map(t => {
+    const d = new Date(t.created_at);
+    const dateStr = d.toLocaleDateString('id-ID',{day:'2-digit',month:'short', year:'numeric'}) + ' ' + d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+    const itemCount = t.items.reduce((s,i) => s+i.qty, 0);
+    return {
+      'Invoice': t.invoice_no,
+      'Tanggal': dateStr,
+      'Kasir': t.user_name,
+      'Jml Item': itemCount,
+      'Subtotal': t.subtotal,
+      'Diskon': t.discount,
+      'Pajak': t.tax,
+      'Total': t.total,
+      'Metode': t.payment_method,
+      'Status': t.status
+    };
+  });
+  
+  if (txns.length === 0) { showToast('Tidak ada data transaksi!', 'error'); return; }
+
+  const ws = XLSX.utils.json_to_sheet(txns);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Riwayat Transaksi");
+  XLSX.writeFile(wb, "Riwayat_Transaksi_HelloCoffee.xlsx");
+}
+
+function exportHistoryPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  
+  doc.text("Riwayat Transaksi - Hello Coffee", 14, 15);
+  
+  const tableData = DB.transactions.map(t => {
+    const d = new Date(t.created_at);
+    const dateStr = d.toLocaleDateString('id-ID',{day:'2-digit',month:'short', year:'numeric'}) + ' ' + d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+    const itemCount = t.items.reduce((s,i) => s+i.qty, 0);
+    return [t.invoice_no, dateStr, t.user_name, itemCount, formatRupiah(t.total), t.payment_method, t.status];
+  });
+
+  if (tableData.length === 0) { showToast('Tidak ada data transaksi!', 'error'); return; }
+
+  doc.autoTable({
+    head: [['Invoice', 'Tanggal', 'Kasir', 'Items', 'Total', 'Metode', 'Status']],
+    body: tableData,
+    startY: 20,
+    theme: 'grid',
+    styles: { fontSize: 8 }
+  });
+  
+  doc.save("Riwayat_Transaksi_HelloCoffee.pdf");
+}
+
+function exportReportExcel() {
+  const txns = DB.transactions.filter(t => t.status === 'completed');
+  if (txns.length === 0) { showToast('Tidak ada data laporan!', 'error'); return; }
+  
+  const totalRev = txns.reduce((s,t) => s+t.total, 0);
+  
+  // Top products
+  const prodCount = {};
+  txns.forEach(t => t.items.forEach(i => { const k = i.name; prodCount[k] = (prodCount[k]||0) + i.qty; }));
+  const topProds = Object.entries(prodCount).sort((a,b) => b[1]-a[1]).map(p => ({ 'Produk': p[0], 'Terjual': p[1] }));
+
+  const wsSummary = XLSX.utils.json_to_sheet([
+    { 'Keterangan': 'Total Pendapatan', 'Nilai': totalRev },
+    { 'Keterangan': 'Total Transaksi', 'Nilai': txns.length },
+    { 'Keterangan': 'Rata-rata Transaksi', 'Nilai': Math.round(totalRev/txns.length) }
+  ]);
+
+  const wsProducts = XLSX.utils.json_to_sheet(topProds);
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, wsSummary, "Ringkasan");
+  XLSX.utils.book_append_sheet(wb, wsProducts, "Produk Terlaris");
+  
+  XLSX.writeFile(wb, "Laporan_Penjualan_HelloCoffee.xlsx");
+}
+
+function exportReportPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  
+  const txns = DB.transactions.filter(t => t.status === 'completed');
+  if (txns.length === 0) { showToast('Tidak ada data laporan!', 'error'); return; }
+  
+  const totalRev = txns.reduce((s,t) => s+t.total, 0);
+  
+  doc.text("Laporan Penjualan - Hello Coffee", 14, 15);
+  doc.setFontSize(10);
+  doc.text(`Total Pendapatan: ${formatRupiah(totalRev)}`, 14, 25);
+  doc.text(`Total Transaksi: ${txns.length}`, 14, 30);
+  doc.text(`Rata-rata Transaksi: ${formatRupiah(Math.round(totalRev/txns.length))}`, 14, 35);
+  
+  // Top products
+  const prodCount = {};
+  txns.forEach(t => t.items.forEach(i => { const k = i.name; prodCount[k] = (prodCount[k]||0) + i.qty; }));
+  const topProds = Object.entries(prodCount).sort((a,b) => b[1]-a[1]).map(p => [p[0], p[1] + 'x']);
+
+  doc.text("Produk Terlaris:", 14, 45);
+  doc.autoTable({
+    head: [['Nama Produk', 'Jumlah Terjual']],
+    body: topProds,
+    startY: 50,
+    theme: 'grid',
+    styles: { fontSize: 8 }
+  });
+  
+  doc.save("Laporan_Penjualan_HelloCoffee.pdf");
 }
 
 // ==================== PRODUCT MGMT ====================
