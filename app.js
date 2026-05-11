@@ -832,16 +832,16 @@ function loadUsers() {
   document.getElementById('userTableBody').innerHTML = DB.users.map(u => {
     const avatar = u.name.charAt(0).toUpperCase();
     const rolePill = u.role === 'admin' 
-      ? '<span style="background:rgba(200,149,108,0.15); color:var(--accent); padding:4px 10px; border-radius:100px; font-size:11px; font-weight:600; letter-spacing:0.5px;">Admin</span>' 
-      : '<span style="background:rgba(255,255,255,0.1); color:var(--text2); padding:4px 10px; border-radius:100px; font-size:11px; font-weight:600; letter-spacing:0.5px;">Kasir</span>';
+      ? '<span style="display:inline-block; background:rgba(200,149,108,0.15); color:var(--accent); padding:4px 10px; border-radius:100px; font-size:11px; font-weight:600; letter-spacing:0.5px;">Admin</span>' 
+      : '<span style="display:inline-block; background:rgba(255,255,255,0.1); color:var(--text2); padding:4px 10px; border-radius:100px; font-size:11px; font-weight:600; letter-spacing:0.5px;">Kasir</span>';
     const statusPill = u.is_active 
-      ? '<span style="background:rgba(16,124,65,0.2); color:#4ade80; padding:4px 10px; border-radius:100px; font-size:11px; font-weight:600;">Aktif</span>' 
-      : '<span style="background:rgba(255,255,255,0.05); color:var(--text3); padding:4px 10px; border-radius:100px; font-size:11px; font-weight:600;">Nonaktif</span>';
+      ? '<span style="display:inline-block; background:rgba(16,124,65,0.2); color:#4ade80; padding:4px 10px; border-radius:100px; font-size:11px; font-weight:600;">Aktif</span>' 
+      : '<span style="display:inline-block; background:rgba(255,255,255,0.05); color:var(--text3); padding:4px 10px; border-radius:100px; font-size:11px; font-weight:600;">Nonaktif</span>';
       
     return `
     <tr style="transition:background 0.2s">
       <td style="color:var(--text3)">US-${u.id}</td>
-      <td>
+      <td style="min-width:160px">
         <div style="display:flex; align-items:center; gap:12px;">
           <div style="width:36px; height:36px; border-radius:50%; background:var(--bg-input); display:flex; align-items:center; justify-content:center; font-weight:700; color:var(--text2); border:1px solid var(--border2)">${avatar}</div>
           <strong style="font-size:14px; font-weight:600; color:var(--text)">${u.name}</strong>
