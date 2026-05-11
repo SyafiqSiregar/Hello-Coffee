@@ -473,6 +473,8 @@ function cancelTransaction(txnId) {
 function loadReports() {
   const txns = DB.transactions.filter(t => t.status === 'completed');
   const totalRev = txns.reduce((s,t) => s+t.total, 0);
+  const totalTxns = txns.length;
+  const avgTxn = totalTxns ? Math.round(totalRev/totalTxns) : 0;
 
   // Top products
   const prodCount = {};
@@ -486,23 +488,93 @@ function loadReports() {
   // Order types
   const typeCount = {};
   txns.forEach(t => { typeCount[t.order_type] = (typeCount[t.order_type]||0) + 1; });
+  const dineInCnt = typeCount['dinein'] || 0;
+  const takeawayCnt = typeCount['takeaway'] || 0;
+  const typeTotal = dineInCnt + takeawayCnt;
+  const dineInPct = typeTotal ? Math.round((dineInCnt/typeTotal)*100) : 0;
+  const takeawayPct = typeTotal ? Math.round((takeawayCnt/typeTotal)*100) : 0;
+
+  // Icons
+  const icSummary = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>`;
+  const icTrophy = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M8 21h8M12 17v4M7 4h10M5 4h14M6 4v7a6 6 0 0 0 12 0V4M3 7h3M18 7h3"/></svg>`;
+  const icPie = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83M22 12A10 10 0 0 0 12 2v10z"/></svg>`;
+  const icCard = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>`;
 
   document.getElementById('reportCards').innerHTML = `
-    <div class="report-card"><h4>📊 Ringkasan</h4><ul class="report-list">
-      <li><span>Total Pendapatan</span><span class="rl-val">${formatRupiah(totalRev)}</span></li>
-      <li><span>Total Transaksi</span><span class="rl-val">${txns.length}</span></li>
-      <li><span>Rata-rata</span><span class="rl-val">${formatRupiah(txns.length?Math.round(totalRev/txns.length):0)}</span></li>
-    </ul></div>
-    <div class="report-card"><h4>🏆 Produk Terlaris</h4><ul class="report-list">
-      ${topProds.length ? topProds.map(([n,q]) => `<li><span>${n}</span><span class="rl-val">${q}x</span></li>`).join('') : '<li><span>Belum ada data</span><span></span></li>'}
-    </ul></div>
-    <div class="report-card"><h4>🍽️ Tipe Pesanan</h4><ul class="report-list">
-      <li><span>Dine In</span><span class="rl-val">${typeCount['dinein'] || 0}x</span></li>
-      <li><span>Take Away</span><span class="rl-val">${typeCount['takeaway'] || 0}x</span></li>
-    </ul></div>
-    <div class="report-card"><h4>💳 Metode Pembayaran</h4><ul class="report-list">
-      ${Object.entries(methCount).map(([m,c]) => `<li><span>${m}</span><span class="rl-val">${c}x</span></li>`).join('') || '<li><span>Belum ada data</span><span></span></li>'}
-    </ul></div>
+    <!-- Highlight Metrics -->
+    <div class="report-card" style="grid-column: 1 / -1; display:flex; gap:20px; flex-wrap:wrap; background:var(--bg-card); padding:24px; border-radius:12px; border:1px solid var(--border2);">
+      <div style="flex:1; min-width:200px;">
+        <div style="display:flex; align-items:center; gap:8px; color:var(--text3); font-size:13px; font-weight:600; margin-bottom:8px;">${icSummary} TOTAL PENDAPATAN</div>
+        <div style="font-size:32px; font-weight:700; color:var(--text);">${formatRupiah(totalRev)}</div>
+      </div>
+      <div style="flex:1; min-width:200px; border-left:1px solid var(--border2); padding-left:20px;">
+        <div style="display:flex; align-items:center; gap:8px; color:var(--text3); font-size:13px; font-weight:600; margin-bottom:8px;">TOTAL TRANSAKSI</div>
+        <div style="font-size:32px; font-weight:700; color:var(--text);">${totalTxns}</div>
+      </div>
+      <div style="flex:1; min-width:200px; border-left:1px solid var(--border2); padding-left:20px;">
+        <div style="display:flex; align-items:center; gap:8px; color:var(--text3); font-size:13px; font-weight:600; margin-bottom:8px;">RATA-RATA TRANSAKSI</div>
+        <div style="font-size:32px; font-weight:700; color:var(--text);">${formatRupiah(avgTxn)}</div>
+      </div>
+    </div>
+
+    <!-- Produk Terlaris -->
+    <div class="report-card">
+      <h4 style="display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--border2); padding-bottom:12px; margin-bottom:16px;">${icTrophy} Produk Terlaris</h4>
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        ${topProds.length ? topProds.map(([n,q], idx) => `
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span style="font-size:14px; font-weight:700; color:${idx===0?'var(--accent)':'var(--text3)'}">${String(idx+1).padStart(2,'0')}</span>
+              <span style="font-size:14px; color:${idx===0?'var(--text)':'var(--text2)'}; font-weight:${idx===0?'600':'400'};">${n}</span>
+            </div>
+            <strong style="color:var(--text2); font-size:14px;">${q}x</strong>
+          </div>
+        `).join('') : '<div style="color:var(--text3); font-size:13px;">Belum ada data</div>'}
+      </div>
+    </div>
+
+    <!-- Tipe Pesanan -->
+    <div class="report-card">
+      <h4 style="display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--border2); padding-bottom:12px; margin-bottom:16px;">${icPie} Tipe Pesanan</h4>
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:13px; font-weight:600; color:var(--text2);">
+            <span>Dine In (${dineInCnt}x)</span><span>${dineInPct}%</span>
+          </div>
+          <div style="width:100%; height:8px; background:var(--bg-input); border-radius:4px; overflow:hidden;">
+            <div style="width:${dineInPct}%; height:100%; background:var(--accent); border-radius:4px;"></div>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:13px; font-weight:600; color:var(--text2);">
+            <span>Take Away (${takeawayCnt}x)</span><span>${takeawayPct}%</span>
+          </div>
+          <div style="width:100%; height:8px; background:var(--bg-input); border-radius:4px; overflow:hidden;">
+            <div style="width:${takeawayPct}%; height:100%; background:var(--text3); border-radius:4px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Metode Pembayaran -->
+    <div class="report-card">
+      <h4 style="display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--border2); padding-bottom:12px; margin-bottom:16px;">${icCard} Metode Pembayaran</h4>
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        ${Object.entries(methCount).length ? Object.entries(methCount).map(([m,c]) => {
+          const pct = Math.round((c/totalTxns)*100);
+          return \`
+            <div>
+              <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:13px; font-weight:600; color:var(--text2); text-transform:capitalize;">
+                <span>\${m} (\${c}x)</span><span>\${pct}%</span>
+              </div>
+              <div style="width:100%; height:8px; background:var(--bg-input); border-radius:4px; overflow:hidden;">
+                <div style="width:\${pct}%; height:100%; background:var(--accent); border-radius:4px;"></div>
+              </div>
+            </div>
+          \`;
+        }).join('') : '<div style="color:var(--text3); font-size:13px;">Belum ada data</div>'}
+      </div>
+    </div>
   `;
 }
 
