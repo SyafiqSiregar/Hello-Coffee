@@ -206,9 +206,14 @@ function recalcCart() {
   const discType = document.getElementById('discountType').value;
   const discount = discType === 'percent' ? subtotal * discVal / 100 : discVal;
   const afterDisc = Math.max(0, subtotal - discount);
-  const tax = Math.round(afterDisc * 0.1);
+  const taxRate = getTaxRate();
+  const tax = Math.round(afterDisc * (taxRate / 100));
   const total = afterDisc + tax;
 
+  const taxLabel = document.getElementById('taxLabel');
+  if (taxLabel) {
+    taxLabel.textContent = `Pajak (${taxRate}%)`;
+  }
   document.getElementById('subtotalText').textContent = formatRupiah(subtotal);
   document.getElementById('taxText').textContent = formatRupiah(tax);
   document.getElementById('totalText').textContent = formatRupiah(total);
@@ -220,7 +225,8 @@ function getTotal() {
   const discType = document.getElementById('discountType').value;
   const discount = discType === 'percent' ? subtotal * discVal / 100 : discVal;
   const afterDisc = Math.max(0, subtotal - discount);
-  const tax = Math.round(afterDisc * 0.1);
+  const taxRate = getTaxRate();
+  const tax = Math.round(afterDisc * (taxRate / 100));
   return { subtotal, discount, afterDisc, tax, total: afterDisc + tax };
 }
 
@@ -295,6 +301,7 @@ function processPayment() {
     order_type: orderType,
     items: cart.map(c => ({ ...c })),
     subtotal, discount, tax, total,
+    tax_rate: getTaxRate(),
     payment_method: payMethod,
     amount_paid: payMethod === 'tunai' ? parseFloat(document.getElementById('cashReceived').value) : total,
     change_given: payMethod === 'tunai' ? (parseFloat(document.getElementById('cashReceived').value) - total) : 0,
@@ -332,7 +339,7 @@ function showReceipt(txn) {
     <div class="r-line"></div>
     <div class="r-row"><span>Subtotal</span><span>${formatRupiah(txn.subtotal)}</span></div>
     ${txn.discount > 0 ? `<div class="r-row"><span>Diskon</span><span>-${formatRupiah(txn.discount)}</span></div>` : ''}
-    <div class="r-row"><span>Pajak (10%)</span><span>${formatRupiah(txn.tax)}</span></div>
+    <div class="r-row"><span>Pajak (${txn.tax_rate !== undefined ? txn.tax_rate : 10}%)</span><span>${formatRupiah(txn.tax)}</span></div>
     <div class="r-line"></div>
     <div class="r-row r-total"><span>TOTAL</span><span>${formatRupiah(txn.total)}</span></div>
     <div class="r-line"></div>
@@ -360,6 +367,10 @@ function showAdmin() {
   loadHistory();
   loadReports();
   loadUsers();
+  const taxInput = document.getElementById('taxRateInput');
+  if (taxInput) {
+    taxInput.value = getTaxRate();
+  }
 }
 
 function hideAdmin() { switchScreen('posScreen'); }
@@ -579,32 +590,92 @@ function loadReports() {
 }
 
 // ==================== EXPORT REPORTS & HISTORY ====================
-function exportHistoryExcel() {
-  const txns = DB.transactions.map(t => {
+async function exportHistoryExcel() {
+  const txns = DB.transactions;
+  if (txns.length === 0) { showToast('Tidak ada data transaksi!', 'error'); return; }
+
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("Riwayat Transaksi");
+
+  // Insert Logo
+  try {
+    const imageId = wb.addImage({ 
+      base64: 'data:image/png;base64,' + LOGO_BLACK_BASE64, 
+      extension: 'png' 
+    });
+    ws.addImage(imageId, {
+      tl: { col: 0, row: 0 },
+      ext: { width: 140, height: 60 }
+    });
+  } catch(e) { console.log('Logo failed to load', e); }
+
+  // Kop Surat Text
+  ws.mergeCells('B1:K1');
+  ws.getCell('B1').value = "HELLO COFFEE";
+  ws.getCell('B1').font = { size: 16, bold: true };
+  ws.mergeCells('B2:K2');
+  ws.getCell('B2').value = "Jl. Kopi Nikmat No. 123, Jakarta Selatan";
+  ws.mergeCells('B3:K3');
+  ws.getCell('B3').value = "Telp: 0812-3456-7890 | Email: hello@coffee.com";
+  ws.mergeCells('B4:K4');
+  ws.getCell('B4').value = "LAPORAN RIWAYAT TRANSAKSI";
+  ws.getCell('B4').font = { bold: true };
+  ws.mergeCells('B5:K5');
+  const reportDate = new Date().toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' });
+  ws.getCell('B5').value = "Tanggal Cetak: " + reportDate;
+
+  // Header Data (baris 7)
+  const headers = ["Invoice", "Tanggal", "Kasir", "Tipe Pesanan", "Jml Item", "Subtotal", "Diskon", "Pajak", "Total", "Metode", "Status"];
+  ws.getRow(7).values = headers;
+  ws.getRow(7).font = { bold: true };
+
+  let sumSubtotal = 0, sumDiskon = 0, sumPajak = 0, sumTotal = 0;
+  let currentRow = 8;
+
+  txns.forEach(t => {
     const d = new Date(t.created_at);
     const dateStr = d.toLocaleDateString('id-ID',{day:'2-digit',month:'short', year:'numeric'}) + ' ' + d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
     const itemCount = t.items.reduce((s,i) => s+i.qty, 0);
-    return {
-      'Invoice': t.invoice_no,
-      'Tanggal': dateStr,
-      'Kasir': t.user_name,
-      'Tipe Pesanan': t.order_type === 'dinein' ? 'Dine In' : 'Take Away',
-      'Jml Item': itemCount,
-      'Subtotal': t.subtotal,
-      'Diskon': t.discount,
-      'Pajak': t.tax,
-      'Total': t.total,
-      'Metode': t.payment_method,
-      'Status': t.status
-    };
-  });
-  
-  if (txns.length === 0) { showToast('Tidak ada data transaksi!', 'error'); return; }
+    
+    sumSubtotal += t.subtotal || 0;
+    sumDiskon += t.discount || 0;
+    sumPajak += t.tax || 0;
+    sumTotal += t.total || 0;
 
-  const ws = XLSX.utils.json_to_sheet(txns);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Riwayat Transaksi");
-  XLSX.writeFile(wb, "Riwayat_Transaksi_HelloCoffee.xlsx");
+    ws.getRow(currentRow).values = [
+      t.invoice_no, dateStr, t.user_name, 
+      t.order_type === 'dinein' ? 'Dine In' : 'Take Away',
+      itemCount, t.subtotal, t.discount, t.tax, t.total, 
+      t.payment_method, t.status
+    ];
+    currentRow++;
+  });
+
+  // Grand Total
+  ws.getRow(currentRow).values = [
+    "GRAND TOTAL", "", "", "", "", 
+    sumSubtotal, sumDiskon, sumPajak, sumTotal, "", ""
+  ];
+  ws.mergeCells(`A${currentRow}:E${currentRow}`);
+  ws.getCell(`A${currentRow}`).font = { bold: true };
+
+  // Format currency
+  for(let r=8; r<=currentRow; r++) {
+    ws.getCell(`F${r}`).numFmt = '"Rp" #,##0';
+    ws.getCell(`G${r}`).numFmt = '"Rp" #,##0';
+    ws.getCell(`H${r}`).numFmt = '"Rp" #,##0';
+    ws.getCell(`I${r}`).numFmt = '"Rp" #,##0';
+  }
+
+  // Set column widths
+  ws.columns = [
+    { width: 18 }, { width: 22 }, { width: 15 }, { width: 15 },
+    { width: 10 }, { width: 15 }, { width: 15 }, { width: 15 },
+    { width: 15 }, { width: 15 }, { width: 12 }
+  ];
+
+  const bufferOut = await wb.xlsx.writeBuffer();
+  saveAs(new Blob([bufferOut]), "Riwayat_Transaksi_HelloCoffee.xlsx");
 }
 
 function exportHistoryPDF() {
@@ -665,30 +736,84 @@ function exportHistoryPDF() {
   img.onerror = () => processPDF(null);
 }
 
-function exportReportExcel() {
+async function exportReportExcel() {
   const txns = DB.transactions.filter(t => t.status === 'completed');
   if (txns.length === 0) { showToast('Tidak ada data laporan!', 'error'); return; }
   
   const totalRev = txns.reduce((s,t) => s+t.total, 0);
-  
-  // Top products
   const prodCount = {};
   txns.forEach(t => t.items.forEach(i => { const k = i.name; prodCount[k] = (prodCount[k]||0) + i.qty; }));
-  const topProds = Object.entries(prodCount).sort((a,b) => b[1]-a[1]).map(p => ({ 'Produk': p[0], 'Terjual': p[1] }));
+  const topProds = Object.entries(prodCount).sort((a,b) => b[1]-a[1]);
+  const reportDate = new Date().toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' });
 
-  const wsSummary = XLSX.utils.json_to_sheet([
-    { 'Keterangan': 'Total Pendapatan', 'Nilai': totalRev },
-    { 'Keterangan': 'Total Transaksi', 'Nilai': txns.length },
-    { 'Keterangan': 'Rata-rata Transaksi', 'Nilai': Math.round(totalRev/txns.length) }
-  ]);
+  const wb = new ExcelJS.Workbook();
+  let imageId = null;
+  try {
+    imageId = wb.addImage({ 
+      base64: 'data:image/png;base64,' + LOGO_BLACK_BASE64, 
+      extension: 'png' 
+    });
+  } catch(e) { console.log('Logo failed', e); }
 
-  const wsProducts = XLSX.utils.json_to_sheet(topProds);
+  // === SHEET 1: RINGKASAN ===
+  const wsSummary = wb.addWorksheet("Ringkasan");
+  if (imageId !== null) {
+    wsSummary.addImage(imageId, { tl: { col: 0, row: 0 }, ext: { width: 140, height: 60 } });
+  }
+  wsSummary.mergeCells('B1:C1');
+  wsSummary.getCell('B1').value = "HELLO COFFEE";
+  wsSummary.getCell('B1').font = { size: 16, bold: true };
+  wsSummary.mergeCells('B2:C2');
+  wsSummary.getCell('B2').value = "Jl. Kopi Nikmat No. 123, Jakarta Selatan";
+  wsSummary.mergeCells('B3:C3');
+  wsSummary.getCell('B3').value = "Telp: 0812-3456-7890 | Email: hello@coffee.com";
+  wsSummary.mergeCells('B4:C4');
+  wsSummary.getCell('B4').value = "RINGKASAN PENJUALAN";
+  wsSummary.getCell('B4').font = { bold: true };
+  wsSummary.mergeCells('B5:C5');
+  wsSummary.getCell('B5').value = "Tanggal Cetak: " + reportDate;
 
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, wsSummary, "Ringkasan");
-  XLSX.utils.book_append_sheet(wb, wsProducts, "Produk Terlaris");
-  
-  XLSX.writeFile(wb, "Laporan_Penjualan_HelloCoffee.xlsx");
+  wsSummary.getRow(7).values = ["Keterangan", "Nilai"];
+  wsSummary.getRow(7).font = { bold: true };
+  wsSummary.getRow(8).values = ["Total Pendapatan", totalRev];
+  wsSummary.getCell('B8').numFmt = '"Rp" #,##0';
+  wsSummary.getRow(9).values = ["Total Transaksi", txns.length];
+  wsSummary.getRow(10).values = ["Rata-rata Transaksi", txns.length ? Math.round(totalRev/txns.length) : 0];
+  wsSummary.getCell('B10').numFmt = '"Rp" #,##0';
+
+  wsSummary.columns = [{ width: 25 }, { width: 20 }];
+
+  // === SHEET 2: PRODUK TERLARIS ===
+  const wsProducts = wb.addWorksheet("Produk Terlaris");
+  if (imageId !== null) {
+    wsProducts.addImage(imageId, { tl: { col: 0, row: 0 }, ext: { width: 140, height: 60 } });
+  }
+  wsProducts.mergeCells('B1:C1');
+  wsProducts.getCell('B1').value = "HELLO COFFEE";
+  wsProducts.getCell('B1').font = { size: 16, bold: true };
+  wsProducts.mergeCells('B2:C2');
+  wsProducts.getCell('B2').value = "Jl. Kopi Nikmat No. 123, Jakarta Selatan";
+  wsProducts.mergeCells('B3:C3');
+  wsProducts.getCell('B3').value = "Telp: 0812-3456-7890 | Email: hello@coffee.com";
+  wsProducts.mergeCells('B4:C4');
+  wsProducts.getCell('B4').value = "LAPORAN PRODUK TERLARIS";
+  wsProducts.getCell('B4').font = { bold: true };
+  wsProducts.mergeCells('B5:C5');
+  wsProducts.getCell('B5').value = "Tanggal Cetak: " + reportDate;
+
+  wsProducts.getRow(7).values = ["Peringkat", "Nama Produk", "Jumlah Terjual"];
+  wsProducts.getRow(7).font = { bold: true };
+
+  let r = 8;
+  topProds.forEach((p, idx) => {
+    wsProducts.getRow(r).values = [idx + 1, p[0], p[1]];
+    r++;
+  });
+
+  wsProducts.columns = [{ width: 15 }, { width: 35 }, { width: 15 }];
+
+  const bufferOut2 = await wb.xlsx.writeBuffer();
+  saveAs(new Blob([bufferOut2]), "Laporan_Penjualan_HelloCoffee.xlsx");
 }
 
 function exportReportPDF() {
@@ -924,4 +1049,21 @@ function toggleUserStatus(id) {
   showToast('Status kasir berhasil diubah!', 'success');
   populateLoginUsers();
   loadUsers();
+}
+
+function saveTaxSettings() {
+  const taxInput = document.getElementById('taxRateInput');
+  if (!taxInput) return;
+  const taxRate = parseFloat(taxInput.value);
+  if (isNaN(taxRate) || taxRate < 0 || taxRate > 100) {
+    showToast('Persentase pajak harus antara 0% dan 100%!', 'error');
+    return;
+  }
+  if (!DB.settings) {
+    DB.settings = {};
+  }
+  DB.settings.tax_rate = taxRate;
+  saveData();
+  recalcCart();
+  showToast('Pengaturan pajak berhasil disimpan!', 'success');
 }
