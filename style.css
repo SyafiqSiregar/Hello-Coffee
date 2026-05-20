@@ -200,9 +200,13 @@ button{cursor:pointer;border:none;background:none;color:var(--text)}
 .admin-tab{display:none}
 .admin-tab.active{display:block;animation:fadeUp .3s ease}
 .admin-title{font-size:22px;font-weight:800;margin-bottom:20px}
-.admin-tab-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.admin-tab-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:12px;flex-wrap:wrap}
 .admin-tab-header .admin-title{margin-bottom:0}
 .admin-tab-header .btn-primary{width:auto;padding:10px 20px;font-size:13px}
+.admin-tab-header .menu-filters{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.admin-tab-header .search-box{margin:0;background:var(--bg-card2);border-color:var(--border2);min-width:200px}
+.admin-tab-header .search-box input{color:var(--text)}
+.admin-tab-header .filter-select{padding:8px 12px;border-radius:var(--radius-xs);background:var(--bg-card2);color:var(--text);border:1px solid var(--border2);font-size:13px;cursor:pointer;width:auto}
 
 /* ========== STATS GRID ========== */
 .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
@@ -235,7 +239,8 @@ button{cursor:pointer;border:none;background:none;color:var(--text)}
 /* ========== FORM ========== */
 .form-group{margin-bottom:16px}
 .form-group label{display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px}
-.checkbox-label{display:flex;align-items:center;gap:8px;font-size:13px;text-transform:none;letter-spacing:0;cursor:pointer}
+.form-group label.checkbox-label{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--text);text-transform:none;letter-spacing:0;cursor:pointer;margin-bottom:0}
+input[type="checkbox"]{width:16px;height:16px;margin:0;padding:0;accent-color:var(--accent);cursor:pointer}
 
 /* ========== CHART ========== */
 .chart-section h3{font-size:16px;font-weight:700;margin-bottom:16px}
@@ -284,6 +289,13 @@ button{cursor:pointer;border:none;background:none;color:var(--text)}
   .admin-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); flex-direction: row; overflow-x: auto; padding: 10px; }
   .admin-nav { white-space: nowrap; flex: 1; justify-content: center; }
   .admin-content { overflow: visible; padding: 16px; }
+  
+  .admin-tab-header { flex-direction: column; align-items: stretch; }
+  .admin-tab-header .admin-title { text-align: left; }
+  .admin-tab-header .menu-filters { flex-direction: column; width: 100%; }
+  .admin-tab-header .search-box { min-width: unset; width: 100%; }
+  .admin-tab-header .filter-select { width: 100%; }
+  .admin-tab-header .btn-primary { width: 100%; }
   
   .report-cards { grid-template-columns: 1fr; }
   .method-grid { grid-template-columns: repeat(2, 1fr); }

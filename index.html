@@ -17,6 +17,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
 
 <body>
@@ -128,7 +129,7 @@
 
         <div class="cart-items" id="cartItems">
           <div class="cart-empty" id="cartEmpty">
-            <span class="cart-empty-icon">🛒</span>
+            <span class="cart-empty-icon"><i class="ph ph-shopping-cart"></i></span>
             <p>Belum ada pesanan</p>
             <small>Pilih menu di sebelah kiri</small>
           </div>
@@ -203,16 +204,16 @@
           <label>Metode Bayar</label>
           <div class="method-grid">
             <button class="method-btn active" data-method="tunai" onclick="selectPayMethod('tunai', this)">
-              <span class="method-icon">💵</span>Tunai
+              <span class="method-icon"><i class="ph ph-money"></i></span>Tunai
             </button>
             <button class="method-btn" data-method="qris" onclick="selectPayMethod('qris', this)">
-              <span class="method-icon">📱</span>QRIS
+              <span class="method-icon"><i class="ph ph-device-mobile"></i></span>QRIS
             </button>
             <button class="method-btn" data-method="transfer" onclick="selectPayMethod('transfer', this)">
-              <span class="method-icon">🏦</span>Transfer
+              <span class="method-icon"><i class="ph ph-bank"></i></span>Transfer
             </button>
             <button class="method-btn" data-method="kartu" onclick="selectPayMethod('kartu', this)">
-              <span class="method-icon">💳</span>Kartu
+              <span class="method-icon"><i class="ph ph-credit-card"></i></span>Kartu
             </button>
           </div>
         </div>
@@ -366,7 +367,19 @@
         <div class="admin-tab" id="tab-menu-mgmt">
           <div class="admin-tab-header">
             <h2 class="admin-title">Manajemen Menu</h2>
-            <button class="btn-primary" onclick="openAddProduct()">+ Tambah Produk</button>
+            <div class="menu-filters">
+              <div class="search-box">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="M21 21l-4.35-4.35" />
+                </svg>
+                <input type="text" id="searchAdminMenu" placeholder="Cari produk atau kategori..." oninput="loadMenuTable()">
+              </div>
+              <select id="filterAdminCategory" class="filter-select" onchange="loadMenuTable()">
+                <option value="0">Semua Kategori</option>
+              </select>
+              <button class="btn-primary" onclick="openAddProduct()">+ Tambah Produk</button>
+            </div>
           </div>
           <div class="admin-table-wrap">
             <table class="admin-table" id="menuTable">

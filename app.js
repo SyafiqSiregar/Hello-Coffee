@@ -87,9 +87,9 @@ function renderProducts() {
   let products = getProductsByCategory(selectedCategory);
   if (search) products = products.filter(p => p.name.toLowerCase().includes(search));
 
-  const emojiMap = { 1:'☕', 2:'🧋', 3:'🍞', 4:'🍪' };
+  const emojiMap = { 1:'<i class="ph ph-cookie"></i>', 2:'<i class="ph ph-fork-knife"></i>', 3:'<i class="ph ph-mug"></i>', 4:'<i class="ph ph-coffee"></i>', 5:'<i class="ph ph-brandy"></i>', 6:'<i class="ph ph-tea-bag"></i>', 7:'<i class="ph ph-sparkle"></i>' };
   grid.innerHTML = products.map(p => {
-    const emoji = emojiMap[p.category_id] || '🍽️';
+    const emoji = emojiMap[p.category_id] || '<i class="ph ph-bowl-food"></i>';
     const unavail = !p.is_available ? ' product-unavailable' : '';
     return `<div class="product-card${unavail}" onclick="addToCart(${p.id})">
       <span class="product-emoji">${emoji}</span>
@@ -177,7 +177,7 @@ function renderCart() {
   badge.textContent = totalQty;
 
   if (cart.length === 0) {
-    el.innerHTML = `<div class="cart-empty" id="cartEmpty"><span class="cart-empty-icon">🛒</span><p>Belum ada pesanan</p><small>Pilih menu di sebelah kiri</small></div>`;
+    el.innerHTML = `<div class="cart-empty" id="cartEmpty"><span class="cart-empty-icon"><i class="ph ph-shopping-cart"></i></span><p>Belum ada pesanan</p><small>Pilih menu di sebelah kiri</small></div>`;
     summary.style.display = 'none';
     return;
   }
@@ -435,7 +435,30 @@ function loadDashboard() {
 }
 
 function loadMenuTable() {
-  document.getElementById('menuTableBody').innerHTML = DB.products.map(p =>
+  // Populate category filter dropdown (only once or on reload)
+  const catSelect = document.getElementById('filterAdminCategory');
+  if (catSelect && catSelect.options.length <= 1) {
+    DB.categories.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = c.name;
+      catSelect.appendChild(opt);
+    });
+  }
+
+  const search = (document.getElementById('searchAdminMenu')?.value || '').toLowerCase().trim();
+  const catFilter = parseInt(document.getElementById('filterAdminCategory')?.value || '0');
+
+  const filtered = DB.products.filter(p => {
+    const catName = getCategoryName(p.category_id).toLowerCase();
+    const matchSearch = !search || p.name.toLowerCase().includes(search) || catName.includes(search);
+    const matchCat = catFilter === 0 || p.category_id === catFilter;
+    return matchSearch && matchCat;
+  });
+
+  document.getElementById('menuTableBody').innerHTML = filtered.length === 0
+    ? '<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:40px">Tidak ada produk ditemukan</td></tr>'
+    : filtered.map(p =>
     `<tr><td><strong>${p.name}</strong></td><td>${getCategoryName(p.category_id)}</td><td>${formatRupiah(p.base_price)}</td>
     <td><span class="badge ${p.is_available ? 'badge-success' : 'badge-danger'}">${p.is_available ? 'Tersedia' : 'Habis'}</span></td>
     <td><button class="btn-sm" onclick="editProduct(${p.id})">Edit</button> <button class="btn-sm btn-sm-danger" onclick="toggleAvail(${p.id})">Toggle</button></td></tr>`

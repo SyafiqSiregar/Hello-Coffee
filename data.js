@@ -5,54 +5,68 @@ const DB = {
     { id: 2, name: 'Admin', role: 'admin', pin: '0000', is_active: true },
   ],
   categories: [
-    { id: 1, name: 'Kopi', icon: '☕', sort_order: 1 },
-    { id: 2, name: 'Non-Kopi', icon: '🧋', sort_order: 2 },
-    { id: 3, name: 'Makanan', icon: '🍞', sort_order: 3 },
-    { id: 4, name: 'Snack', icon: '🍪', sort_order: 4 },
+    { id: 1, name: 'Snack & Dessert', icon: '<i class="ph ph-cookie"></i>', sort_order: 1 },
+    { id: 2, name: 'Main Course', icon: '<i class="ph ph-fork-knife"></i>', sort_order: 2 },
+    { id: 3, name: 'Latte', icon: '<i class="ph ph-mug"></i>', sort_order: 3 },
+    { id: 4, name: 'Coffee', icon: '<i class="ph ph-coffee"></i>', sort_order: 4 },
+    { id: 5, name: 'Non Coffee', icon: '<i class="ph ph-brandy"></i>', sort_order: 5 },
+    { id: 6, name: 'Tea', icon: '<i class="ph ph-tea-bag"></i>', sort_order: 6 },
+    { id: 7, name: 'Signature', icon: '<i class="ph ph-sparkle"></i>', sort_order: 7 },
   ],
   products: [
-    { id: 1, category_id: 1, name: 'Espresso', base_price: 18000, image: '', is_available: true },
-    { id: 2, category_id: 1, name: 'Americano', base_price: 22000, image: '', is_available: true },
-    { id: 3, category_id: 1, name: 'Cappuccino', base_price: 28000, image: '', is_available: true },
-    { id: 4, category_id: 1, name: 'Caffe Latte', base_price: 28000, image: '', is_available: true },
-    { id: 5, category_id: 1, name: 'Mocha Latte', base_price: 32000, image: '', is_available: true },
-    { id: 6, category_id: 1, name: 'Vanilla Latte', base_price: 32000, image: '', is_available: true },
-    { id: 7, category_id: 1, name: 'Hazelnut Latte', base_price: 32000, image: '', is_available: true },
-    { id: 8, category_id: 1, name: 'Caramel Macchiato', base_price: 35000, image: '', is_available: true },
-    { id: 9, category_id: 2, name: 'Matcha Latte', base_price: 30000, image: '', is_available: true },
-    { id: 10, category_id: 2, name: 'Taro Latte', base_price: 28000, image: '', is_available: true },
-    { id: 11, category_id: 2, name: 'Red Velvet', base_price: 30000, image: '', is_available: true },
-    { id: 12, category_id: 2, name: 'Chocolate', base_price: 25000, image: '', is_available: true },
-    { id: 13, category_id: 2, name: 'Thai Tea', base_price: 22000, image: '', is_available: true },
-    { id: 14, category_id: 2, name: 'Lemon Tea', base_price: 18000, image: '', is_available: true },
-    { id: 15, category_id: 3, name: 'Croissant', base_price: 25000, image: '', is_available: true },
-    { id: 16, category_id: 3, name: 'Sandwich', base_price: 30000, image: '', is_available: true },
-    { id: 17, category_id: 3, name: 'Toast Bread', base_price: 22000, image: '', is_available: true },
-    { id: 18, category_id: 3, name: 'French Fries', base_price: 20000, image: '', is_available: true },
-    { id: 19, category_id: 4, name: 'Cookies', base_price: 15000, image: '', is_available: true },
-    { id: 20, category_id: 4, name: 'Brownies', base_price: 18000, image: '', is_available: true },
-    { id: 21, category_id: 4, name: 'Banana Cake', base_price: 20000, image: '', is_available: true },
+    // Snack & Dessert
+    { id: 1, category_id: 1, name: 'Singkong Krispi', base_price: 10000, image: '', is_available: true },
+    { id: 2, category_id: 1, name: 'Kentang Goreng', base_price: 10000, image: '', is_available: true },
+    { id: 3, category_id: 1, name: 'Pempek', base_price: 13000, image: '', is_available: true },
+    { id: 4, category_id: 1, name: 'Banana Chocho', base_price: 13000, image: '', is_available: true },
+    { id: 5, category_id: 1, name: 'Mix Platter', base_price: 20000, image: '', is_available: true },
+    { id: 6, category_id: 1, name: 'Dimsum', base_price: 13000, image: '', is_available: true },
+    { id: 7, category_id: 1, name: 'Cireng Suwir', base_price: 13000, image: '', is_available: true },
+    
+    // Main Course
+    { id: 8, category_id: 2, name: 'Creamy Spagethy', base_price: 18000, image: '', is_available: true },
+    { id: 9, category_id: 2, name: 'Mac & Chesse', base_price: 15000, image: '', is_available: true },
+    { id: 10, category_id: 2, name: 'Indomie Rebus', base_price: 13000, image: '', is_available: true },
+    { id: 11, category_id: 2, name: 'Nasi Goreng', base_price: 18000, image: '', is_available: true },
+    { id: 12, category_id: 2, name: 'Spagethy Bolognese', base_price: 18000, image: '', is_available: true },
+    { id: 13, category_id: 2, name: 'Indomie Goreng', base_price: 13000, image: '', is_available: true },
+    { id: 14, category_id: 2, name: 'Chiken Teriyaki', base_price: 20000, image: '', is_available: true },
+
+    // Latte
+    { id: 15, category_id: 3, name: 'Kopsu Aren', base_price: 13000, image: '', is_available: true },
+    { id: 16, category_id: 3, name: 'Kopsu Karamel', base_price: 15000, image: '', is_available: true },
+    { id: 17, category_id: 3, name: 'Kopsu Vanilla', base_price: 15000, image: '', is_available: true },
+    { id: 18, category_id: 3, name: 'Kopsu Regal', base_price: 15000, image: '', is_available: true },
+    { id: 19, category_id: 3, name: 'Kopsu Pandan', base_price: 15000, image: '', is_available: true },
+    { id: 20, category_id: 3, name: 'Kopsu Hazelnutt', base_price: 15000, image: '', is_available: true },
+
+    // Coffee
+    { id: 21, category_id: 4, name: 'Kopi Tubruk', base_price: 10000, image: '', is_available: true },
+    { id: 22, category_id: 4, name: 'Americano', base_price: 13000, image: '', is_available: true },
+    { id: 23, category_id: 4, name: 'V60', base_price: 18000, image: '', is_available: true },
+    { id: 24, category_id: 4, name: 'Latte', base_price: 15000, image: '', is_available: true },
+    { id: 25, category_id: 4, name: 'Cappucino', base_price: 15000, image: '', is_available: true },
+    { id: 26, category_id: 4, name: 'Vietnam Drip', base_price: 13000, image: '', is_available: true },
+
+    // Non Coffee
+    { id: 27, category_id: 5, name: 'Matcha', base_price: 15000, image: '', is_available: true },
+    { id: 28, category_id: 5, name: 'Red Velvet', base_price: 15000, image: '', is_available: true },
+    { id: 29, category_id: 5, name: 'Taro', base_price: 15000, image: '', is_available: true },
+    { id: 30, category_id: 5, name: 'Dark Chocho', base_price: 15000, image: '', is_available: true },
+
+    // Tea
+    { id: 31, category_id: 6, name: 'Lycee Tea', base_price: 13000, image: '', is_available: true },
+    { id: 32, category_id: 6, name: 'Lemon Tea', base_price: 13000, image: '', is_available: true },
+    { id: 33, category_id: 6, name: 'Lemon Grass', base_price: 15000, image: '', is_available: true },
+
+    // Signature
+    { id: 34, category_id: 7, name: 'Frezza', base_price: 15000, image: '', is_available: true },
+    { id: 35, category_id: 7, name: 'Berrycano', base_price: 15000, image: '', is_available: true },
+    { id: 36, category_id: 7, name: 'Lemon Dusk', base_price: 15000, image: '', is_available: true },
+    { id: 37, category_id: 7, name: 'Berry Blom Sparkle', base_price: 15000, image: '', is_available: true },
+    { id: 38, category_id: 7, name: 'Americano Lychee', base_price: 15000, image: '', is_available: true }
   ],
-  product_variants: [
-    { id: 1, product_id: 2, name: 'Hot', price_adjustment: 0 },
-    { id: 2, product_id: 2, name: 'Ice', price_adjustment: 3000 },
-    { id: 3, product_id: 3, name: 'Hot', price_adjustment: 0 },
-    { id: 4, product_id: 3, name: 'Ice', price_adjustment: 3000 },
-    { id: 5, product_id: 4, name: 'Hot', price_adjustment: 0 },
-    { id: 6, product_id: 4, name: 'Ice', price_adjustment: 3000 },
-    { id: 7, product_id: 5, name: 'Hot', price_adjustment: 0 },
-    { id: 8, product_id: 5, name: 'Ice', price_adjustment: 3000 },
-    { id: 9, product_id: 6, name: 'Hot', price_adjustment: 0 },
-    { id: 10, product_id: 6, name: 'Ice', price_adjustment: 3000 },
-    { id: 11, product_id: 7, name: 'Hot', price_adjustment: 0 },
-    { id: 12, product_id: 7, name: 'Ice', price_adjustment: 3000 },
-    { id: 13, product_id: 8, name: 'Hot', price_adjustment: 0 },
-    { id: 14, product_id: 8, name: 'Ice', price_adjustment: 3000 },
-    { id: 15, product_id: 9, name: 'Hot', price_adjustment: 0 },
-    { id: 16, product_id: 9, name: 'Ice', price_adjustment: 3000 },
-    { id: 17, product_id: 10, name: 'Hot', price_adjustment: 0 },
-    { id: 18, product_id: 10, name: 'Ice', price_adjustment: 3000 },
-  ],
+  product_variants: [],
   transactions: [],
   shifts: [],
   settings: {
@@ -99,8 +113,8 @@ function loadData() {
   if (saved) {
     const parsed = JSON.parse(saved);
     DB.transactions = parsed.transactions || [];
-    DB.products = parsed.products || DB.products;
-    DB.categories = parsed.categories || DB.categories;
+    // DB.products = parsed.products || DB.products;
+    // DB.categories = parsed.categories || DB.categories;
     DB.shifts = parsed.shifts || [];
     DB.users = parsed.users || DB.users;
     DB.settings = parsed.settings || { tax_rate: 10 };
