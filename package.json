@@ -1,0 +1,26 @@
+{
+  "name": "hello-coffe-pos-system",
+  "version": "1.0.0",
+  "description": "Sistem kasir (Point of Sale) sederhana berbasis web yang dirancang untuk kedai kopi. Proyek ini dibangun menggunakan HTML, CSS, dan Vanilla JavaScript.",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SyafiqSiregar/Hello-Coffee.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/SyafiqSiregar/Hello-Coffee/issues"
+  },
+  "homepage": "https://github.com/SyafiqSiregar/Hello-Coffee#readme",
+  "dependencies": {
+    "@capacitor/android": "^8.3.4",
+    "@capacitor/cli": "^8.3.4",
+    "@capacitor/core": "^8.3.4"
+  }
+}
