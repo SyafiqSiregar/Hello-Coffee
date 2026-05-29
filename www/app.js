@@ -4,6 +4,7 @@ let cart = [];
 let orderType = 'dinein';
 let selectedCategory = 0;
 let payMethod = 'tunai';
+let currentReceiptTxn = null;
 
 // ==================== INIT ====================
 document.addEventListener('DOMContentLoaded', () => {
@@ -141,6 +142,7 @@ function addItemToCart(product, variant) {
       key, productId: product.id, variantId: variant ? variant.id : null,
       name: product.name, variant: variant ? variant.name : null,
       price: product.base_price + (variant ? variant.price_adjustment : 0),
+      cost_price: product.cost_price || 0,
       qty: 1
     });
   }
@@ -290,6 +292,8 @@ function processPayment() {
     const cash = parseFloat(document.getElementById('cashReceived').value) || 0;
     if (cash < total) { showToast('Uang kurang!', 'error'); return; }
   }
+  const total_cost = cart.reduce((s, c) => s + (c.cost_price || 0) * c.qty, 0);
+  const profit = (subtotal - discount) - total_cost;
   const invoiceNo = generateInvoiceNo();
   const txn = {
     id: DB.transactions.length + 1,
@@ -300,7 +304,7 @@ function processPayment() {
     table_no: document.getElementById('tableNo').value || '-',
     order_type: orderType,
     items: cart.map(c => ({ ...c })),
-    subtotal, discount, tax, total,
+    subtotal, discount, tax, total, total_cost, profit,
     tax_rate: getTaxRate(),
     payment_method: payMethod,
     amount_paid: payMethod === 'tunai' ? parseFloat(document.getElementById('cashReceived').value) : total,
@@ -318,6 +322,7 @@ function processPayment() {
 
 // ==================== RECEIPT ====================
 function showReceipt(txn) {
+  currentReceiptTxn = txn;
   const el = document.getElementById('receiptPaper');
   const date = new Date(txn.created_at);
   const dateStr = date.toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' }) + ' ' + date.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
@@ -326,7 +331,7 @@ function showReceipt(txn) {
   ).join('');
 
   el.innerHTML = `
-    <div class="r-center"><img src="hello%20putih.png" alt="Logo" style="width: 54px; height: auto; margin: 0 auto 6px; display: block;"><div class="r-brand">Hello Coffee</div><div class="r-sub">Jl. Kopi Nikmat No. 123</div></div>
+    <div class="r-center"><img src="hello%20putih.png" alt="Logo" style="width: 54px; height: auto; margin: 0 auto 6px; display: block;"><div class="r-brand">Hello Coffee</div><div class="r-sub">Mulya Asri, TBT, TBB, Lampung.<br>Telp: 082175327335 | IG @hellocoffee.tbb</div></div>
     <div class="r-line"></div>
     <div class="r-row"><span>No:</span><span>${txn.invoice_no}</span></div>
     <div class="r-row"><span>Tanggal:</span><span>${dateStr}</span></div>
@@ -352,11 +357,133 @@ function showReceipt(txn) {
 }
 
 function printReceipt() {
-  const content = document.getElementById('receiptPaper').innerHTML;
-  const w = window.open('', '_blank', 'width=400,height=600');
-  w.document.write(`<html><head><title>Struk</title><style>body{font-family:'Courier New',monospace;font-size:12px;padding:10px;max-width:300px;margin:0 auto}.r-center{text-align:center}.r-brand{font-size:18px;font-weight:700}.r-sub{font-size:10px;color:#666;margin-bottom:12px}.r-line{border-top:1px dashed #ccc;margin:8px 0}.r-row{display:flex;justify-content:space-between;padding:2px 0}.r-item{padding:3px 0}.r-item-name{font-weight:600}.r-total{font-size:16px;font-weight:700}.r-footer{font-size:10px;color:#888;margin-top:12px;text-align:center}@media print{body{margin:0;padding:5px}}</style></head><body>${content}</body></html>`);
-  w.document.close();
-  setTimeout(() => w.print(), 500);
+  if (window.bluetoothSerial) {
+    showToast('Memeriksa Bluetooth...', 'info');
+    window.bluetoothSerial.isEnabled(
+      () => {
+        window.bluetoothSerial.list(
+          (devices) => {
+            if (devices.length === 0) {
+              showToast('Tidak ada printer Bluetooth terpasang! Pasangkan (Pair) di Pengaturan HP.', 'error');
+              return;
+            }
+            let listHtml = devices.map(d => `<button class="btn-outline" style="width:100%;margin-bottom:8px;padding:12px;border:1px solid var(--border2);border-radius:8px;background:var(--bg-card);color:var(--text);font-weight:600;display:flex;flex-direction:column;align-items:flex-start;" onclick="connectAndPrintBT('${d.address}')">
+              <span>${d.name}</span>
+              <span style="font-size:11px;color:var(--text3);font-weight:400;margin-top:4px">${d.address}</span>
+            </button>`).join('');
+            document.getElementById('btDeviceList').innerHTML = listHtml;
+            openModal('btSelectModal');
+          },
+          (err) => { showToast('Gagal memindai Bluetooth: ' + err, 'error'); }
+        );
+      },
+      () => { showToast('Bluetooth mati! Mohon nyalakan Bluetooth HP Anda.', 'error'); }
+    );
+  } else {
+    const content = document.getElementById('receiptPaper').innerHTML;
+    const printIframe = document.createElement('iframe');
+    printIframe.style.position = 'absolute';
+    printIframe.style.top = '-1000px';
+    document.body.appendChild(printIframe);
+    const doc = printIframe.contentWindow.document;
+    doc.write(`<html><head><title>Struk</title><style>body{font-family:'Courier New',monospace;font-size:12px;padding:10px;max-width:300px;margin:0 auto}.r-center{text-align:center}.r-brand{font-size:18px;font-weight:700}.r-sub{font-size:10px;color:#666;margin-bottom:12px}.r-line{border-top:1px dashed #ccc;margin:8px 0}.r-row{display:flex;justify-content:space-between;padding:2px 0}.r-item{padding:3px 0}.r-item-name{font-weight:600}.r-total{font-size:16px;font-weight:700}.r-footer{font-size:10px;color:#888;margin-top:12px;text-align:center}@media print{body{margin:0;padding:5px}}</style></head><body>${content}</body></html>`);
+    doc.close();
+    printIframe.contentWindow.focus();
+    setTimeout(() => {
+      printIframe.contentWindow.print();
+      setTimeout(() => { document.body.removeChild(printIframe); }, 1000);
+    }, 500);
+  }
+}
+
+function connectAndPrintBT(macAddress) {
+  closeModalById('btSelectModal');
+  showToast('Menghubungkan ke printer...', 'info');
+  window.bluetoothSerial.connect(macAddress, 
+    () => {
+      showToast('Terhubung! Sedang mencetak...', 'success');
+      const data = generateESCPOS(currentReceiptTxn);
+      window.bluetoothSerial.write(data, 
+        () => {
+          showToast('Struk selesai dicetak!', 'success');
+          setTimeout(() => window.bluetoothSerial.disconnect(), 1000);
+        },
+        (err) => { showToast('Gagal mengirim data cetak: ' + err, 'error'); }
+      );
+    },
+    (err) => { showToast('Gagal terhubung ke printer. Pastikan printer menyala!', 'error'); }
+  );
+}
+
+function generateESCPOS(txn) {
+  const ESC = "\x1B";
+  const GS = "\x1D";
+  const INIT = ESC + "@";
+  const ALIGN_CENTER = ESC + "a" + "\x01";
+  const ALIGN_LEFT = ESC + "a" + "\x00";
+  const BOLD_ON = ESC + "E" + "\x01";
+  const BOLD_OFF = ESC + "E" + "\x00";
+  const DOUBLE_ON = GS + "!" + "\x11";
+  const DOUBLE_OFF = GS + "!" + "\x00";
+  const LINE = "--------------------------------\n";
+  const CUT = GS + "V" + "\x41" + "\x00";
+  
+  let out = INIT;
+  out += ALIGN_CENTER;
+  out += DOUBLE_ON + BOLD_ON + "HELLO COFFEE\n" + DOUBLE_OFF + BOLD_OFF;
+  out += "Mulya Asri, TBT, TBB, Lampung.\n";
+  out += "Telp: 082175327335\n";
+  out += "IG @hellocoffee.tbb\n\n";
+  
+  out += ALIGN_LEFT;
+  out += LINE;
+  out += "No   : " + txn.invoice_no + "\n";
+  const dateObj = new Date(txn.created_at);
+  const dateStr = dateObj.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}) + ' ' + dateObj.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+  out += "Tgl  : " + dateStr + "\n";
+  out += "Kasir: " + txn.user_name + "\n";
+  out += "Tipe : " + (txn.order_type === 'dinein' ? 'Dine In' : 'Take Away') + "\n";
+  if (txn.table_no !== '-') out += "Meja : " + txn.table_no + "\n";
+  if (txn.customer !== '-') out += "Nama : " + txn.customer + "\n";
+  out += LINE;
+  
+  txn.items.forEach(i => {
+    let name = i.name + (i.variant ? ' ('+i.variant+')' : '');
+    out += BOLD_ON + name + BOLD_OFF + "\n";
+    let qtyPrice = i.qty + " x " + formatRupiah(i.price);
+    let totalLine = formatRupiah(i.qty * i.price);
+    let spaces = 32 - qtyPrice.length - totalLine.length;
+    if (spaces < 1) spaces = 1;
+    out += qtyPrice + " ".repeat(spaces) + totalLine + "\n";
+  });
+  
+  out += LINE;
+  
+  function addRow(left, right) {
+    let spaces = 32 - left.length - right.length;
+    if (spaces < 1) spaces = 1;
+    return left + " ".repeat(spaces) + right + "\n";
+  }
+  
+  out += addRow("Subtotal", formatRupiah(txn.subtotal));
+  if (txn.discount > 0) out += addRow("Diskon", "-" + formatRupiah(txn.discount));
+  out += addRow(`Pajak (${txn.tax_rate||10}%)`, formatRupiah(txn.tax));
+  out += LINE;
+  out += BOLD_ON + addRow("TOTAL", formatRupiah(txn.total)) + BOLD_OFF;
+  out += LINE;
+  out += addRow(`Bayar (${txn.payment_method})`, formatRupiah(txn.amount_paid));
+  if (txn.change_given > 0) out += addRow("Kembali", formatRupiah(txn.change_given));
+  out += "\n";
+  
+  out += ALIGN_CENTER;
+  out += "Terima kasih sudah berkunjung!\n~ Hello Coffee ~\n\n\n\n";
+  out += CUT;
+  
+  let uint8 = new Uint8Array(out.length);
+  for(let i=0; i<out.length; i++){
+    uint8[i] = out.charCodeAt(i);
+  }
+  return uint8.buffer;
 }
 
 // ==================== ADMIN ====================
@@ -386,14 +513,22 @@ function loadDashboard() {
   const today = new Date().toDateString();
   const todayTxns = DB.transactions.filter(t => new Date(t.created_at).toDateString() === today && t.status === 'completed');
   const totalRevenue = todayTxns.reduce((s, t) => s + t.total, 0);
+  const netProfit = todayTxns.reduce((s, t) => {
+    if (t.profit !== undefined) return s + t.profit;
+    const tCost = t.items.reduce((s2, i) => {
+      const p = DB.products.find(prod => prod.id === i.productId);
+      return s2 + ((p ? p.cost_price : 0) || 0) * i.qty;
+    }, 0);
+    return s + ((t.subtotal || 0) - (t.discount || 0) - tCost);
+  }, 0);
   const totalTxns = todayTxns.length;
   const avgTxn = totalTxns > 0 ? Math.round(totalRevenue / totalTxns) : 0;
   const totalItems = todayTxns.reduce((s, t) => s + t.items.reduce((si, i) => si + i.qty, 0), 0);
 
   document.getElementById('statsGrid').innerHTML = `
     <div class="stat-card"><div class="stat-label">Pendapatan Hari Ini</div><div class="stat-value">${formatRupiah(totalRevenue)}</div><div class="stat-sub">${totalTxns} transaksi</div></div>
+    <div class="stat-card"><div class="stat-label">Keuntungan Bersih</div><div class="stat-value" style="color:var(--success)">${formatRupiah(netProfit)}</div><div class="stat-sub">hari ini</div></div>
     <div class="stat-card"><div class="stat-label">Total Transaksi</div><div class="stat-value">${totalTxns}</div><div class="stat-sub">hari ini</div></div>
-    <div class="stat-card"><div class="stat-label">Rata-rata Transaksi</div><div class="stat-value">${formatRupiah(avgTxn)}</div><div class="stat-sub">per transaksi</div></div>
     <div class="stat-card"><div class="stat-label">Item Terjual</div><div class="stat-value">${totalItems}</div><div class="stat-sub">hari ini</div></div>
   `;
 
@@ -457,9 +592,10 @@ function loadMenuTable() {
   });
 
   document.getElementById('menuTableBody').innerHTML = filtered.length === 0
-    ? '<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:40px">Tidak ada produk ditemukan</td></tr>'
+    ? '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:40px">Tidak ada produk ditemukan</td></tr>'
     : filtered.map(p =>
     `<tr><td><strong>${p.name}</strong></td><td>${getCategoryName(p.category_id)}</td><td>${formatRupiah(p.base_price)}</td>
+    <td>${formatRupiah(p.cost_price || 0)}</td><td style="color:var(--success);font-weight:600">${formatRupiah(p.base_price - (p.cost_price || 0))}</td>
     <td><span class="badge ${p.is_available ? 'badge-success' : 'badge-danger'}">${p.is_available ? 'Tersedia' : 'Habis'}</span></td>
     <td><button class="btn-sm" onclick="editProduct(${p.id})">Edit</button> <button class="btn-sm btn-sm-danger" onclick="toggleAvail(${p.id})">Toggle</button></td></tr>`
   ).join('');
@@ -637,9 +773,9 @@ async function exportHistoryExcel() {
   ws.getCell('B1').value = "HELLO COFFEE";
   ws.getCell('B1').font = { size: 16, bold: true };
   ws.mergeCells('B2:K2');
-  ws.getCell('B2').value = "Jl. Kopi Nikmat No. 123, Jakarta Selatan";
+  ws.getCell('B2').value = "Mulya Asri, TBT, TBB, Lampung.";
   ws.mergeCells('B3:K3');
-  ws.getCell('B3').value = "Telp: 0812-3456-7890 | Email: hello@coffee.com";
+  ws.getCell('B3').value = "Telp: 082175327335 | IG @hellocoffee.tbb";
   ws.mergeCells('B4:K4');
   ws.getCell('B4').value = "LAPORAN RIWAYAT TRANSAKSI";
   ws.getCell('B4').font = { bold: true };
@@ -648,11 +784,11 @@ async function exportHistoryExcel() {
   ws.getCell('B5').value = "Tanggal Cetak: " + reportDate;
 
   // Header Data (baris 7)
-  const headers = ["Invoice", "Tanggal", "Kasir", "Tipe Pesanan", "Jml Item", "Subtotal", "Diskon", "Pajak", "Total", "Metode", "Status"];
+  const headers = ["Invoice", "Tanggal", "Kasir", "Tipe Pesanan", "Jml Item", "Subtotal", "Diskon", "Pajak", "Total", "Total Modal", "Laba/Keuntungan", "Metode", "Status"];
   ws.getRow(7).values = headers;
   ws.getRow(7).font = { bold: true };
 
-  let sumSubtotal = 0, sumDiskon = 0, sumPajak = 0, sumTotal = 0;
+  let sumSubtotal = 0, sumDiskon = 0, sumPajak = 0, sumTotal = 0, sumModal = 0, sumLaba = 0;
   let currentRow = 8;
 
   txns.forEach(t => {
@@ -660,15 +796,19 @@ async function exportHistoryExcel() {
     const dateStr = d.toLocaleDateString('id-ID',{day:'2-digit',month:'short', year:'numeric'}) + ' ' + d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
     const itemCount = t.items.reduce((s,i) => s+i.qty, 0);
     
+    const tCost = t.total_cost !== undefined ? t.total_cost : t.items.reduce((s2, i) => s2 + ((DB.products.find(prod => prod.id === i.productId)?.cost_price || 0) * i.qty), 0);
+    const tProfit = t.profit !== undefined ? t.profit : ((t.subtotal || 0) - (t.discount || 0) - tCost);
     sumSubtotal += t.subtotal || 0;
     sumDiskon += t.discount || 0;
     sumPajak += t.tax || 0;
     sumTotal += t.total || 0;
+    sumModal += tCost || 0;
+    sumLaba += tProfit || 0;
 
     ws.getRow(currentRow).values = [
       t.invoice_no, dateStr, t.user_name, 
       t.order_type === 'dinein' ? 'Dine In' : 'Take Away',
-      itemCount, t.subtotal, t.discount, t.tax, t.total, 
+      itemCount, t.subtotal, t.discount, t.tax, t.total, tCost, tProfit, 
       t.payment_method, t.status
     ];
     currentRow++;
@@ -677,7 +817,7 @@ async function exportHistoryExcel() {
   // Grand Total
   ws.getRow(currentRow).values = [
     "GRAND TOTAL", "", "", "", "", 
-    sumSubtotal, sumDiskon, sumPajak, sumTotal, "", ""
+    sumSubtotal, sumDiskon, sumPajak, sumTotal, sumModal, sumLaba, "", ""
   ];
   ws.mergeCells(`A${currentRow}:E${currentRow}`);
   ws.getCell(`A${currentRow}`).font = { bold: true };
@@ -688,17 +828,19 @@ async function exportHistoryExcel() {
     ws.getCell(`G${r}`).numFmt = '"Rp" #,##0';
     ws.getCell(`H${r}`).numFmt = '"Rp" #,##0';
     ws.getCell(`I${r}`).numFmt = '"Rp" #,##0';
+    ws.getCell(`J${r}`).numFmt = '"Rp" #,##0';
+    ws.getCell(`K${r}`).numFmt = '"Rp" #,##0';
   }
 
   // Set column widths
   ws.columns = [
     { width: 18 }, { width: 22 }, { width: 15 }, { width: 15 },
     { width: 10 }, { width: 15 }, { width: 15 }, { width: 15 },
-    { width: 15 }, { width: 15 }, { width: 12 }
+    { width: 15 }, { width: 15 }, { width: 15 }, { width: 15 }, { width: 12 }
   ];
 
   const bufferOut = await wb.xlsx.writeBuffer();
-  saveAs(new Blob([bufferOut]), "Riwayat_Transaksi_HelloCoffee.xlsx");
+  saveFileMobile(new Blob([bufferOut]), "Riwayat_Transaksi_HelloCoffee.xlsx");
 }
 
 function exportHistoryPDF() {
@@ -709,7 +851,9 @@ function exportHistoryPDF() {
     const d = new Date(t.created_at);
     const dateStr = d.toLocaleDateString('id-ID',{day:'2-digit',month:'short', year:'numeric'}) + ' ' + d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
     const itemCount = t.items.reduce((s,i) => s+i.qty, 0);
-    return [t.invoice_no, dateStr, t.user_name, t.order_type === 'dinein' ? 'Dine In' : 'Take Away', itemCount, formatRupiah(t.total), t.payment_method, t.status];
+    const tCost = t.total_cost !== undefined ? t.total_cost : t.items.reduce((s2, i) => s2 + ((DB.products.find(prod => prod.id === i.productId)?.cost_price || 0) * i.qty), 0);
+    const tProfit = t.profit !== undefined ? t.profit : ((t.subtotal || 0) - (t.discount || 0) - tCost);
+    return [t.invoice_no, dateStr, t.user_name, t.order_type === 'dinein' ? 'Dine In' : 'Take Away', itemCount, formatRupiah(t.total), formatRupiah(tCost), formatRupiah(tProfit), t.payment_method, t.status];
   });
 
   if (tableData.length === 0) { showToast('Tidak ada data transaksi!', 'error'); return; }
@@ -722,16 +866,16 @@ function exportHistoryPDF() {
     doc.text("HELLO COFFEE", 42, 20);
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.text("Jl. Kopi Nikmat No. 123, Jakarta Selatan", 42, 26);
-    doc.text("Telp: 0812-3456-7890 | Email: hello@coffee.com", 42, 31);
+    doc.text("Mulya Asri, TBT, TBB, Lampung.", 42, 26);
+    doc.text("Telp: 082175327335 | IG @hellocoffee.tbb", 42, 31);
   } catch (e) {
     doc.setFontSize(22);
     doc.setFont("helvetica", "bold");
     doc.text("HELLO COFFEE", 14, 20);
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.text("Jl. Kopi Nikmat No. 123, Jakarta Selatan", 14, 26);
-    doc.text("Telp: 0812-3456-7890 | Email: hello@coffee.com", 14, 31);
+    doc.text("Mulya Asri, TBT, TBB, Lampung.", 14, 26);
+    doc.text("Telp: 082175327335 | IG @hellocoffee.tbb", 14, 31);
   }
   
   // Garis Kop
@@ -743,13 +887,14 @@ function exportHistoryPDF() {
   doc.text("Laporan Riwayat Transaksi", 105, 48, null, null, "center");
 
   doc.autoTable({
-    head: [['Invoice', 'Tanggal', 'Kasir', 'Tipe', 'Items', 'Total', 'Metode', 'Status']],
+    head: [['Invoice', 'Tanggal', 'Kasir', 'Tipe', 'Items', 'Total', 'Modal', 'Laba', 'Metode', 'Status']],
     body: tableData,
     startY: 54,
     theme: 'grid',
     styles: { fontSize: 8 }
   });
-  doc.save("Riwayat_Transaksi_HelloCoffee.pdf");
+  const pdfBlob = doc.output('blob');
+  saveFileMobile(pdfBlob, "Riwayat_Transaksi_HelloCoffee.pdf");
 }
 
 async function exportReportExcel() {
@@ -780,9 +925,9 @@ async function exportReportExcel() {
   wsSummary.getCell('B1').value = "HELLO COFFEE";
   wsSummary.getCell('B1').font = { size: 16, bold: true };
   wsSummary.mergeCells('B2:C2');
-  wsSummary.getCell('B2').value = "Jl. Kopi Nikmat No. 123, Jakarta Selatan";
+  wsSummary.getCell('B2').value = "Mulya Asri, TBT, TBB, Lampung.";
   wsSummary.mergeCells('B3:C3');
-  wsSummary.getCell('B3').value = "Telp: 0812-3456-7890 | Email: hello@coffee.com";
+  wsSummary.getCell('B3').value = "Telp: 082175327335 | IG @hellocoffee.tbb";
   wsSummary.mergeCells('B4:C4');
   wsSummary.getCell('B4').value = "RINGKASAN PENJUALAN";
   wsSummary.getCell('B4').font = { bold: true };
@@ -808,9 +953,9 @@ async function exportReportExcel() {
   wsProducts.getCell('B1').value = "HELLO COFFEE";
   wsProducts.getCell('B1').font = { size: 16, bold: true };
   wsProducts.mergeCells('B2:C2');
-  wsProducts.getCell('B2').value = "Jl. Kopi Nikmat No. 123, Jakarta Selatan";
+  wsProducts.getCell('B2').value = "Mulya Asri, TBT, TBB, Lampung.";
   wsProducts.mergeCells('B3:C3');
-  wsProducts.getCell('B3').value = "Telp: 0812-3456-7890 | Email: hello@coffee.com";
+  wsProducts.getCell('B3').value = "Telp: 082175327335 | IG @hellocoffee.tbb";
   wsProducts.mergeCells('B4:C4');
   wsProducts.getCell('B4').value = "LAPORAN PRODUK TERLARIS";
   wsProducts.getCell('B4').font = { bold: true };
@@ -829,7 +974,7 @@ async function exportReportExcel() {
   wsProducts.columns = [{ width: 15 }, { width: 35 }, { width: 15 }];
 
   const bufferOut2 = await wb.xlsx.writeBuffer();
-  saveAs(new Blob([bufferOut2]), "Laporan_Penjualan_HelloCoffee.xlsx");
+  saveFileMobile(new Blob([bufferOut2]), "Laporan_Penjualan_HelloCoffee.xlsx");
 }
 
 function exportReportPDF() {
@@ -840,6 +985,11 @@ function exportReportPDF() {
   if (txns.length === 0) { showToast('Tidak ada data laporan!', 'error'); return; }
   
   const totalRev = txns.reduce((s,t) => s+t.total, 0);
+  const totalProfit = txns.reduce((s, t) => {
+    if (t.profit !== undefined) return s + t.profit;
+    const tCost = t.items.reduce((s2, i) => s2 + ((DB.products.find(prod => prod.id === i.productId)?.cost_price || 0) * i.qty), 0);
+    return s + ((t.subtotal || 0) - (t.discount || 0) - tCost);
+  }, 0);
   
   // KOP SURAT
   try {
@@ -849,16 +999,16 @@ function exportReportPDF() {
     doc.text("HELLO COFFEE", 42, 20);
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.text("Jl. Kopi Nikmat No. 123, Jakarta Selatan", 42, 26);
-    doc.text("Telp: 0812-3456-7890 | Email: hello@coffee.com", 42, 31);
+    doc.text("Mulya Asri, TBT, TBB, Lampung.", 42, 26);
+    doc.text("Telp: 082175327335 | IG @hellocoffee.tbb", 42, 31);
   } catch (e) {
     doc.setFontSize(22);
     doc.setFont("helvetica", "bold");
     doc.text("HELLO COFFEE", 14, 20);
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.text("Jl. Kopi Nikmat No. 123, Jakarta Selatan", 14, 26);
-    doc.text("Telp: 0812-3456-7890 | Email: hello@coffee.com", 14, 31);
+    doc.text("Mulya Asri, TBT, TBB, Lampung.", 14, 26);
+    doc.text("Telp: 082175327335 | IG @hellocoffee.tbb", 14, 31);
   }
   
   // Garis Kop
@@ -872,8 +1022,9 @@ function exportReportPDF() {
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
   doc.text(`Total Pendapatan: ${formatRupiah(totalRev)}`, 14, 58);
-  doc.text(`Total Transaksi: ${txns.length}`, 14, 64);
-  doc.text(`Rata-rata Transaksi: ${formatRupiah(Math.round(totalRev/txns.length))}`, 14, 70);
+  doc.text(`Keuntungan Bersih: ${formatRupiah(totalProfit)}`, 14, 64);
+  doc.text(`Total Transaksi: ${txns.length}`, 14, 70);
+  doc.text(`Rata-rata Transaksi: ${formatRupiah(Math.round(totalRev/txns.length))}`, 14, 76);
   
   // Top products
   const prodCount = {};
@@ -882,16 +1033,17 @@ function exportReportPDF() {
 
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
-  doc.text("Produk Terlaris:", 14, 82);
+  doc.text("Produk Terlaris:", 14, 88);
   doc.autoTable({
     head: [['Nama Produk', 'Jumlah Terjual']],
     body: topProds,
-    startY: 86,
+    startY: 92,
     theme: 'grid',
     styles: { fontSize: 8 }
   });
   
-  doc.save("Laporan_Penjualan_HelloCoffee.pdf");
+  const pdfBlob = doc.output('blob');
+  saveFileMobile(pdfBlob, "Laporan_Penjualan_HelloCoffee.pdf");
 }
 
 // ==================== PRODUCT MGMT ====================
@@ -900,6 +1052,7 @@ function openAddProduct() {
   document.getElementById('addProductTitle').textContent = 'Tambah Produk Baru';
   document.getElementById('prodName').value = '';
   document.getElementById('prodPrice').value = '';
+  document.getElementById('prodCostPrice').value = '';
   document.getElementById('prodAvailable').checked = true;
   const sel = document.getElementById('prodCategory');
   sel.innerHTML = DB.categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
@@ -913,6 +1066,7 @@ function editProduct(id) {
   document.getElementById('addProductTitle').textContent = 'Edit Produk';
   document.getElementById('prodName').value = p.name;
   document.getElementById('prodPrice').value = p.base_price;
+  document.getElementById('prodCostPrice').value = p.cost_price || 0;
   document.getElementById('prodAvailable').checked = p.is_available;
   const sel = document.getElementById('prodCategory');
   sel.innerHTML = DB.categories.map(c => `<option value="${c.id}" ${c.id===p.category_id?'selected':''}>${c.name}</option>`).join('');
@@ -924,14 +1078,15 @@ function saveProduct() {
   const name = document.getElementById('prodName').value.trim();
   const catId = parseInt(document.getElementById('prodCategory').value);
   const price = parseInt(document.getElementById('prodPrice').value);
+  const costPrice = parseInt(document.getElementById('prodCostPrice').value) || 0;
   const avail = document.getElementById('prodAvailable').checked;
   if (!name || !price) { showToast('Lengkapi semua field!', 'error'); return; }
 
   if (id) {
     const p = DB.products.find(pr => pr.id === parseInt(id));
-    if (p) { p.name = name; p.category_id = catId; p.base_price = price; p.is_available = avail; }
+    if (p) { p.name = name; p.category_id = catId; p.base_price = price; p.cost_price = costPrice; p.is_available = avail; }
   } else {
-    DB.products.push({ id: DB.products.length + 1, category_id: catId, name, base_price: price, image: '', is_available: avail });
+    DB.products.push({ id: DB.products.length + 1, category_id: catId, name, base_price: price, cost_price: costPrice, image: '', is_available: avail });
   }
   saveData();
   closeModalById('addProductModal');
@@ -1071,8 +1226,50 @@ function saveTaxSettings() {
   if (!DB.settings) {
     DB.settings = {};
   }
-  DB.settings.tax_rate = taxRate;
+  DB.settings.taxRate = taxRate;
   saveData();
   recalcCart();
   showToast('Pengaturan pajak berhasil disimpan!', 'success');
+}
+
+function getTaxRate() {
+  if (DB.settings && typeof DB.settings.taxRate !== 'undefined') {
+    return parseFloat(DB.settings.taxRate);
+  }
+  return 10;
+}
+
+// ==================== EXPORT MOBILE HELPER ====================
+async function saveFileMobile(blob, filename) {
+  if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+    try {
+      const reader = new FileReader();
+      reader.readAsDataURL(blob);
+      reader.onloadend = async () => {
+        const base64data = reader.result;
+        const { Filesystem, Share } = window.Capacitor.Plugins;
+        const path = filename;
+        const result = await Filesystem.writeFile({
+          path: path,
+          data: base64data,
+          directory: 'CACHE',
+        });
+        await Share.share({
+          title: filename,
+          url: result.uri,
+        });
+      };
+    } catch (e) {
+      console.error(e);
+      showToast('Gagal membagikan file: ' + e.message, 'error');
+    }
+  } else {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    showToast('File berhasil diunduh', 'success');
+  }
 }
