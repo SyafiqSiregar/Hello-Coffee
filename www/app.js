@@ -316,6 +316,11 @@ function processPayment() {
   DB.transactions.push(txn);
   saveData();
   closeModalById('checkoutModal');
+  const btnClose = document.getElementById('btnReceiptClose');
+  if (btnClose) {
+    btnClose.textContent = "Transaksi Baru";
+    btnClose.onclick = function() { closeModalById('receiptModal'); clearCart(); };
+  }
   showReceipt(txn);
   showToast('Pembayaran berhasil! ' + invoiceNo, 'success');
 }
@@ -354,6 +359,17 @@ function showReceipt(txn) {
     <div class="r-footer">Terima kasih sudah berkunjung!<br>~ Hello Coffee ~</div>
   `;
   openModal('receiptModal');
+}
+
+function showTransactionDetail(txnId) {
+  const txn = DB.transactions.find(t => t.id === txnId);
+  if (!txn) return;
+  const btnClose = document.getElementById('btnReceiptClose');
+  if (btnClose) {
+    btnClose.textContent = "Tutup";
+    btnClose.onclick = function() { closeModalById('receiptModal'); };
+  }
+  showReceipt(txn);
 }
 
 function printReceipt() {
@@ -611,10 +627,10 @@ function loadHistory() {
       const itemCount = t.items.reduce((s,i) => s+i.qty, 0);
       const tipe = t.order_type === 'dinein' ? 'Dine In' : 'Take Away';
       const actionBtn = t.status === 'completed' 
-        ? `<button class="btn-sm btn-sm-danger" onclick="cancelTransaction(${t.id})">Batalkan</button>`
-        : `<span style="font-size:12px;color:var(--text3)">Dibatalkan</span>`;
+        ? `<button class="btn-sm" style="margin-right:4px;" onclick="showTransactionDetail(${t.id})"><i class="ph ph-receipt"></i> Detail</button><button class="btn-sm btn-sm-danger" onclick="cancelTransaction(${t.id})">Batalkan</button>`
+        : `<button class="btn-sm" style="margin-right:4px;" onclick="showTransactionDetail(${t.id})"><i class="ph ph-receipt"></i> Detail</button><span style="font-size:12px;color:var(--text3)">Dibatalkan</span>`;
       return `<tr><td><strong>${t.invoice_no}</strong></td><td>${ds}</td><td>${t.user_name}</td><td>${tipe}</td><td>${itemCount} item</td><td>${formatRupiah(t.total)}</td><td>${t.payment_method}</td>
-      <td><span class="badge ${t.status==='completed'?'badge-success':'badge-danger'}">${t.status}</span></td><td>${actionBtn}</td></tr>`;
+      <td><span class="badge ${t.status==='completed'?'badge-success':'badge-danger'}">${t.status}</span></td><td style="white-space:nowrap;">${actionBtn}</td></tr>`;
     }).join('');
 }
 
