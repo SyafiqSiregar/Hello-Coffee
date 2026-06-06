@@ -113,8 +113,8 @@ function loadData() {
   if (saved) {
     const parsed = JSON.parse(saved);
     DB.transactions = parsed.transactions || [];
-    // DB.products = parsed.products || DB.products;
-    // DB.categories = parsed.categories || DB.categories;
+    DB.products = parsed.products || DB.products;
+    DB.categories = parsed.categories || DB.categories;
     DB.shifts = parsed.shifts || [];
     DB.users = parsed.users || DB.users;
     DB.settings = parsed.settings || { tax_rate: 10 };
