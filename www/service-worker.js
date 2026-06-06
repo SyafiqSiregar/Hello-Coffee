@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hello-coffee-pos-v4';
+const CACHE_NAME = 'hello-coffee-pos-v5';
 const urlsToCache = [
   './',
   './index.html',
@@ -22,12 +22,18 @@ self.addEventListener('install', event => {
 
 self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request)
+    fetch(event.request)
       .then(response => {
-        if (response) {
-          return response;
-        }
-        return fetch(event.request);
+        // Clone the response and update the cache in the background
+        const responseToCache = response.clone();
+        caches.open(CACHE_NAME).then(cache => {
+          cache.put(event.request, responseToCache);
+        });
+        return response;
+      })
+      .catch(() => {
+        // If network fails (or local fetch fails), fallback to cache
+        return caches.match(event.request);
       })
   );
 });
