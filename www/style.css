@@ -11,7 +11,7 @@
   --transition:all .2s ease;
 }
 html{font-size:14px}
-body{font-family:'Inter',sans-serif;background:var(--bg-dark);color:var(--text);min-height:100vh;overflow:hidden}
+body{font-family:'Inter',sans-serif;background:var(--bg-dark);color:var(--text);min-height:100vh;min-height:100dvh;overflow:hidden}
 a{color:var(--accent);text-decoration:none}
 input,select,textarea,button{font-family:inherit;font-size:inherit}
 input,select,textarea{background:var(--bg-card);color:var(--text);border:1px solid var(--border2);border-radius:var(--radius-xs);padding:10px 12px;outline:none;transition:var(--transition);width:100%}
@@ -23,7 +23,7 @@ button{cursor:pointer;border:none;background:none;color:var(--text)}
 ::placeholder{color:var(--text3)}
 
 /* ========== SCREENS ========== */
-.screen{display:none;height:100vh;width:100vw;position:fixed;top:0;left:0}
+.screen{display:none;height:100vh;height:100dvh;width:100vw;position:fixed;top:0;left:0}
 .screen.active{display:flex;flex-direction:column}
 
 /* ========== LOGIN ========== */
@@ -149,6 +149,10 @@ button{cursor:pointer;border:none;background:none;color:var(--text)}
 .btn-secondary:hover{border-color:var(--text2);color:var(--text);background:var(--bg-hover)}
 .modal-checkout{width:520px}
 .modal-receipt{width:420px}
+.quick-period-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.quick-period-grid button{padding:10px;border-radius:var(--radius-xs);font-size:12px;font-weight:600;color:var(--text2);background:var(--bg-card2);border:1px solid var(--border2);transition:var(--transition);text-align:center}
+.quick-period-grid button:hover{background:var(--bg-hover);color:var(--text);border-color:var(--text3)}
+.quick-period-grid button.active{background:var(--accent-glow);color:var(--accent-light);border-color:var(--accent)}
 
 /* ========== CHECKOUT ========== */
 .checkout-total-display{text-align:center;padding:20px;background:linear-gradient(135deg,rgba(200,149,108,.1),rgba(166,124,82,.05));border-radius:var(--radius);margin-bottom:20px}
@@ -276,7 +280,7 @@ input[type="checkbox"]{width:16px;height:16px;margin:0;padding:0;accent-color:va
 
 @media (max-width: 768px) {
   body { overflow-y: auto; overflow-x: hidden; }
-  .screen { height: auto; min-height: 100vh; position: static; }
+  .screen { height: auto; min-height: 100vh; min-height: 100dvh; position: static; }
   
   .pos-layout { flex-direction: column; overflow: visible; }
   .menu-area { overflow: visible; flex: none; padding: 12px; }
@@ -315,4 +319,12 @@ input[type="checkbox"]{width:16px;height:16px;margin:0;padding:0;accent-color:va
   .method-grid { grid-template-columns: 1fr; }
   .login-card { padding: 32px 24px; }
   .user-info { display: none; }
+}
+
+@media (max-height: 500px) {
+  body { overflow-y: auto; }
+  .screen { height: auto; min-height: 100dvh; position: static; }
+  .pos-layout { overflow: visible; align-items: flex-start; }
+  .menu-area, .cart-area { overflow: visible; flex: none; height: auto; }
+  .product-grid { overflow: visible; flex: none; height: auto; }
 }

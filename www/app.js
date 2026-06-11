@@ -5,6 +5,14 @@ let orderType = 'dinein';
 let selectedCategory = 0;
 let payMethod = 'tunai';
 let currentReceiptTxn = null;
+let filterStartDate = null;
+let filterEndDate = null;
+let filterPeriodLabel = 'Hari Ini';
+
+let tempFilterStartDate = null;
+let tempFilterEndDate = null;
+let tempFilterPeriodLabel = 'Hari Ini';
+let currentFilterContext = 'reports';
 
 // ==================== INIT ====================
 document.addEventListener('DOMContentLoaded', () => {
@@ -13,6 +21,13 @@ document.addEventListener('DOMContentLoaded', () => {
   renderProducts();
   updateClock();
   setInterval(updateClock, 60000);
+  
+  // Set default filter to 'Hari Ini'
+  setQuickPeriod('today');
+  const elR = document.getElementById('reportPeriodText');
+  if(elR) elR.textContent = 'Periode: Hari Ini';
+  const elH = document.getElementById('historyPeriodText');
+  if(elH) elH.textContent = 'Periode: Hari Ini';
 });
 
 function updateClock() {
@@ -269,9 +284,11 @@ function renderQuickCash(total) {
   [rounded, 50000, 100000, 200000].forEach(v => {
     if (v >= total && !suggestions.includes(v)) suggestions.push(v);
   });
-  el.innerHTML = suggestions.map(v =>
+  let html = suggestions.map(v =>
     `<button onclick="document.getElementById('cashReceived').value=${v};calcChange()">${formatRupiah(v)}</button>`
   ).join('');
+  html += `<button onclick="document.getElementById('cashReceived').value=${total};calcChange()" style="border-color:var(--accent); color:var(--accent-light);">Uang Pas</button>`;
+  el.innerHTML = html;
 }
 
 function calcChange() {
@@ -344,6 +361,7 @@ function showReceipt(txn) {
     <div class="r-row"><span>Tipe:</span><span>${txn.order_type === 'dinein' ? 'Dine In' : 'Take Away'}</span></div>
     ${txn.table_no !== '-' ? `<div class="r-row"><span>Meja:</span><span>${txn.table_no}</span></div>` : ''}
     ${txn.customer !== '-' ? `<div class="r-row"><span>Pelanggan:</span><span>${txn.customer}</span></div>` : ''}
+    ${txn.note ? `<div class="r-row" style="align-items:flex-start;"><span>Catatan:</span><span style="text-align:right; max-width:65%; word-break:break-word; font-style:italic; font-size:11px;">${txn.note}</span></div>` : ''}
     <div class="r-line"></div>
     ${itemsHtml}
     <div class="r-line"></div>
@@ -461,6 +479,11 @@ function generateESCPOS(txn) {
   out += "Tipe : " + (txn.order_type === 'dinein' ? 'Dine In' : 'Take Away') + "\n";
   if (txn.table_no !== '-') out += "Meja : " + txn.table_no + "\n";
   if (txn.customer !== '-') out += "Nama : " + txn.customer + "\n";
+  if (txn.note) {
+    let noteStr = "Catatan: " + txn.note;
+    let noteLines = noteStr.match(/.{1,32}/g) || [];
+    noteLines.forEach(l => out += l + "\n");
+  }
   out += LINE;
   
   txn.items.forEach(i => {
@@ -500,6 +523,159 @@ function generateESCPOS(txn) {
     uint8[i] = out.charCodeAt(i);
   }
   return uint8.buffer;
+}
+
+// ==================== PERIOD FILTER ====================
+function openPeriodModal(context) {
+  currentFilterContext = context;
+  tempFilterStartDate = filterStartDate;
+  tempFilterEndDate = filterEndDate;
+  tempFilterPeriodLabel = filterPeriodLabel;
+  
+  const titleEl = document.getElementById('periodModalTitle');
+  const btnEl = document.getElementById('btnApplyPeriod');
+  
+  if (context.startsWith('export_')) {
+    if(titleEl) titleEl.textContent = 'Pilih Periode Ekspor';
+    if(btnEl) btnEl.textContent = 'Download';
+  } else {
+    if(titleEl) titleEl.textContent = 'Pilih Periode';
+    if(btnEl) btnEl.textContent = 'Terapkan';
+  }
+  
+  openModal('periodModal');
+}
+
+function clearQuickPeriod() {
+  document.querySelectorAll('.quick-period-grid button').forEach(b => b.classList.remove('active'));
+}
+
+function setQuickPeriod(type, btn) {
+  if(btn) {
+    clearQuickPeriod();
+    btn.classList.add('active');
+  }
+  const today = new Date();
+  const start = new Date(today);
+  const end = new Date(today);
+  
+  start.setHours(0,0,0,0);
+  end.setHours(23,59,59,999);
+
+  switch(type) {
+    case 'today':
+      tempFilterPeriodLabel = 'Hari Ini';
+      break;
+    case 'yesterday':
+      start.setDate(start.getDate() - 1);
+      end.setDate(end.getDate() - 1);
+      tempFilterPeriodLabel = 'Kemarin';
+      break;
+    case 'this_week':
+      const day = start.getDay();
+      const diff = start.getDate() - day + (day === 0 ? -6 : 1);
+      start.setDate(diff);
+      tempFilterPeriodLabel = 'Minggu Ini';
+      break;
+    case 'last_week':
+      const dayLW = start.getDay();
+      const diffLW = start.getDate() - dayLW + (dayLW === 0 ? -6 : 1) - 7;
+      start.setDate(diffLW);
+      end.setDate(diffLW + 6);
+      tempFilterPeriodLabel = 'Minggu Lalu';
+      break;
+    case 'this_month':
+      start.setDate(1);
+      end.setMonth(end.getMonth() + 1);
+      end.setDate(0);
+      tempFilterPeriodLabel = 'Bulan Ini';
+      break;
+    case 'last_month':
+      start.setMonth(start.getMonth() - 1);
+      start.setDate(1);
+      end.setDate(0);
+      tempFilterPeriodLabel = 'Bulan Lalu';
+      break;
+    case 'this_year':
+      start.setMonth(0, 1);
+      end.setMonth(11, 31);
+      tempFilterPeriodLabel = 'Tahun Ini';
+      break;
+    case 'all_time':
+      tempFilterStartDate = null;
+      tempFilterEndDate = null;
+      tempFilterPeriodLabel = 'Semua Waktu';
+      const startEl = document.getElementById('customPeriodStart');
+      const endEl = document.getElementById('customPeriodEnd');
+      if (startEl) startEl.value = '';
+      if (endEl) endEl.value = '';
+      return;
+  }
+  
+  tempFilterStartDate = start;
+  tempFilterEndDate = end;
+  
+  const tzOffset = start.getTimezoneOffset() * 60000;
+  const startIso = new Date(start.getTime() - tzOffset).toISOString().split('T')[0];
+  const endIso = new Date(end.getTime() - tzOffset).toISOString().split('T')[0];
+  
+  const startEl = document.getElementById('customPeriodStart');
+  const endEl = document.getElementById('customPeriodEnd');
+  if (startEl) startEl.value = startIso;
+  if (endEl) endEl.value = endIso;
+}
+
+function applyPeriodFilter() {
+  const customStart = document.getElementById('customPeriodStart').value;
+  const customEnd = document.getElementById('customPeriodEnd').value;
+  
+  const hasActiveQuick = document.querySelector('.quick-period-grid button.active');
+  
+  if (!hasActiveQuick && customStart && customEnd) {
+    tempFilterStartDate = new Date(customStart + 'T00:00:00');
+    tempFilterEndDate = new Date(customEnd + 'T23:59:59');
+    
+    const sObj = new Date(tempFilterStartDate);
+    const eObj = new Date(tempFilterEndDate);
+    const opt = {day:'numeric', month:'short'};
+    tempFilterPeriodLabel = sObj.toLocaleDateString('id-ID', opt) + ' - ' + eObj.toLocaleDateString('id-ID', opt);
+  } else if (!hasActiveQuick && (!customStart || !customEnd)) {
+    showToast('Pilih rentang tanggal kustom dengan lengkap!', 'error');
+    return;
+  }
+  
+  closeModalById('periodModal');
+  
+  if (currentFilterContext.startsWith('export_')) {
+    if (currentFilterContext === 'export_report_excel') exportReportExcel(tempFilterStartDate, tempFilterEndDate, tempFilterPeriodLabel);
+    else if (currentFilterContext === 'export_report_pdf') exportReportPDF(tempFilterStartDate, tempFilterEndDate, tempFilterPeriodLabel);
+    else if (currentFilterContext === 'export_history_excel') exportHistoryExcel(tempFilterStartDate, tempFilterEndDate, tempFilterPeriodLabel);
+    else if (currentFilterContext === 'export_history_pdf') exportHistoryPDF(tempFilterStartDate, tempFilterEndDate, tempFilterPeriodLabel);
+  } else {
+    filterStartDate = tempFilterStartDate;
+    filterEndDate = tempFilterEndDate;
+    filterPeriodLabel = tempFilterPeriodLabel;
+    
+    if (currentFilterContext === 'reports') {
+      const el = document.getElementById('reportPeriodText');
+      if(el) el.textContent = 'Periode: ' + filterPeriodLabel;
+      loadReports();
+    } else if (currentFilterContext === 'history') {
+      const el = document.getElementById('historyPeriodText');
+      if(el) el.textContent = 'Periode: ' + filterPeriodLabel;
+      loadHistory();
+    }
+  }
+}
+
+function getFilteredTransactions(txns, sDate = filterStartDate, eDate = filterEndDate) {
+  if (!sDate || !eDate) return txns;
+  const sTime = sDate.getTime();
+  const eTime = eDate.getTime();
+  return txns.filter(t => {
+    const dTime = new Date(t.created_at).getTime();
+    return dTime >= sTime && dTime <= eTime;
+  });
 }
 
 // ==================== ADMIN ====================
@@ -618,7 +794,8 @@ function loadMenuTable() {
 }
 
 function loadHistory() {
-  const txns = [...DB.transactions].reverse();
+  let txns = [...DB.transactions].reverse();
+  txns = getFilteredTransactions(txns);
   document.getElementById('historyTableBody').innerHTML = txns.length === 0 ?
     '<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:40px">Belum ada transaksi</td></tr>' :
     txns.map(t => {
@@ -657,7 +834,8 @@ function cancelTransaction(txnId) {
 }
 
 function loadReports() {
-  const txns = DB.transactions.filter(t => t.status === 'completed');
+  let txns = DB.transactions.filter(t => t.status === 'completed');
+  txns = getFilteredTransactions(txns);
   const totalRev = txns.reduce((s,t) => s+t.total, 0);
   const totalTxns = txns.length;
   const avgTxn = totalTxns ? Math.round(totalRev/totalTxns) : 0;
@@ -765,8 +943,9 @@ function loadReports() {
 }
 
 // ==================== EXPORT REPORTS & HISTORY ====================
-async function exportHistoryExcel() {
-  const txns = DB.transactions;
+async function exportHistoryExcel(sDate, eDate, pLabel) {
+  let txns = DB.transactions;
+  txns = getFilteredTransactions(txns, sDate, eDate);
   if (txns.length === 0) { showToast('Tidak ada data transaksi!', 'error'); return; }
 
   const wb = new ExcelJS.Workbook();
@@ -797,10 +976,10 @@ async function exportHistoryExcel() {
   ws.getCell('B4').font = { bold: true };
   ws.mergeCells('B5:K5');
   const reportDate = new Date().toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' });
-  ws.getCell('B5').value = "Tanggal Cetak: " + reportDate;
+  ws.getCell('B5').value = "Periode: " + pLabel + " | Tanggal Cetak: " + reportDate;
 
   // Header Data (baris 7)
-  const headers = ["Invoice", "Tanggal", "Kasir", "Tipe Pesanan", "Jml Item", "Subtotal", "Diskon", "Pajak", "Total", "Total Modal", "Laba/Keuntungan", "Metode", "Status"];
+  const headers = ["Invoice", "Tanggal", "Kasir", "Tipe Pesanan", "Detail Pesanan", "Subtotal", "Diskon", "Pajak", "Total", "Total Modal", "Laba/Keuntungan", "Metode", "Status"];
   ws.getRow(7).values = headers;
   ws.getRow(7).font = { bold: true };
 
@@ -810,7 +989,7 @@ async function exportHistoryExcel() {
   txns.forEach(t => {
     const d = new Date(t.created_at);
     const dateStr = d.toLocaleDateString('id-ID',{day:'2-digit',month:'short', year:'numeric'}) + ' ' + d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
-    const itemCount = t.items.reduce((s,i) => s+i.qty, 0);
+    const itemDetails = t.items.map(i => `${i.qty}x ${i.name}`).join('\n');
     
     const tCost = t.total_cost !== undefined ? t.total_cost : t.items.reduce((s2, i) => s2 + ((DB.products.find(prod => prod.id === i.productId)?.cost_price || 0) * i.qty), 0);
     const tProfit = t.profit !== undefined ? t.profit : ((t.subtotal || 0) - (t.discount || 0) - tCost);
@@ -821,12 +1000,14 @@ async function exportHistoryExcel() {
     sumModal += tCost || 0;
     sumLaba += tProfit || 0;
 
-    ws.getRow(currentRow).values = [
+    const row = ws.getRow(currentRow);
+    row.values = [
       t.invoice_no, dateStr, t.user_name, 
       t.order_type === 'dinein' ? 'Dine In' : 'Take Away',
-      itemCount, t.subtotal, t.discount, t.tax, t.total, tCost, tProfit, 
+      itemDetails, t.subtotal, t.discount, t.tax, t.total, tCost, tProfit, 
       t.payment_method, t.status
     ];
+    row.getCell(5).alignment = { wrapText: true, vertical: 'top' };
     currentRow++;
   });
 
@@ -851,7 +1032,7 @@ async function exportHistoryExcel() {
   // Set column widths
   ws.columns = [
     { width: 18 }, { width: 22 }, { width: 15 }, { width: 15 },
-    { width: 10 }, { width: 15 }, { width: 15 }, { width: 15 },
+    { width: 25 }, { width: 15 }, { width: 15 }, { width: 15 },
     { width: 15 }, { width: 15 }, { width: 15 }, { width: 15 }, { width: 12 }
   ];
 
@@ -859,17 +1040,18 @@ async function exportHistoryExcel() {
   saveFileMobile(new Blob([bufferOut]), "Riwayat_Transaksi_HelloCoffee.xlsx");
 }
 
-function exportHistoryPDF() {
+function exportHistoryPDF(sDate, eDate, pLabel) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
   
-  const tableData = DB.transactions.map(t => {
+  let txns = getFilteredTransactions(DB.transactions, sDate, eDate);
+  const tableData = txns.map(t => {
     const d = new Date(t.created_at);
     const dateStr = d.toLocaleDateString('id-ID',{day:'2-digit',month:'short', year:'numeric'}) + ' ' + d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
-    const itemCount = t.items.reduce((s,i) => s+i.qty, 0);
+    const itemDetails = t.items.map(i => `${i.qty}x ${i.name}`).join('\n');
     const tCost = t.total_cost !== undefined ? t.total_cost : t.items.reduce((s2, i) => s2 + ((DB.products.find(prod => prod.id === i.productId)?.cost_price || 0) * i.qty), 0);
     const tProfit = t.profit !== undefined ? t.profit : ((t.subtotal || 0) - (t.discount || 0) - tCost);
-    return [t.invoice_no, dateStr, t.user_name, t.order_type === 'dinein' ? 'Dine In' : 'Take Away', itemCount, formatRupiah(t.total), formatRupiah(tCost), formatRupiah(tProfit), t.payment_method, t.status];
+    return [t.invoice_no, dateStr, t.user_name, t.order_type === 'dinein' ? 'Dine In' : 'Take Away', itemDetails, formatRupiah(t.total), formatRupiah(tCost), formatRupiah(tProfit), t.payment_method, t.status];
   });
 
   if (tableData.length === 0) { showToast('Tidak ada data transaksi!', 'error'); return; }
@@ -901,20 +1083,27 @@ function exportHistoryPDF() {
   doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
   doc.text("Laporan Riwayat Transaksi", 105, 48, null, null, "center");
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text("Periode: " + pLabel, 105, 54, null, null, "center");
 
   doc.autoTable({
-    head: [['Invoice', 'Tanggal', 'Kasir', 'Tipe', 'Items', 'Total', 'Modal', 'Laba', 'Metode', 'Status']],
+    head: [['Invoice', 'Tanggal', 'Kasir', 'Tipe', 'Detail Pesanan', 'Total', 'Modal', 'Laba', 'Metode', 'Status']],
     body: tableData,
-    startY: 54,
+    startY: 60,
     theme: 'grid',
-    styles: { fontSize: 8 }
+    styles: { fontSize: 8, cellPadding: 2 },
+    columnStyles: {
+      4: { cellWidth: 35 }
+    }
   });
   const pdfBlob = doc.output('blob');
   saveFileMobile(pdfBlob, "Riwayat_Transaksi_HelloCoffee.pdf");
 }
 
-async function exportReportExcel() {
-  const txns = DB.transactions.filter(t => t.status === 'completed');
+async function exportReportExcel(sDate, eDate, pLabel) {
+  let txns = DB.transactions.filter(t => t.status === 'completed');
+  txns = getFilteredTransactions(txns, sDate, eDate);
   if (txns.length === 0) { showToast('Tidak ada data laporan!', 'error'); return; }
   
   const totalRev = txns.reduce((s,t) => s+t.total, 0);
@@ -948,7 +1137,7 @@ async function exportReportExcel() {
   wsSummary.getCell('B4').value = "RINGKASAN PENJUALAN";
   wsSummary.getCell('B4').font = { bold: true };
   wsSummary.mergeCells('B5:C5');
-  wsSummary.getCell('B5').value = "Tanggal Cetak: " + reportDate;
+  wsSummary.getCell('B5').value = "Periode: " + pLabel + " | Tanggal Cetak: " + reportDate;
 
   wsSummary.getRow(7).values = ["Keterangan", "Nilai"];
   wsSummary.getRow(7).font = { bold: true };
@@ -976,7 +1165,7 @@ async function exportReportExcel() {
   wsProducts.getCell('B4').value = "LAPORAN PRODUK TERLARIS";
   wsProducts.getCell('B4').font = { bold: true };
   wsProducts.mergeCells('B5:C5');
-  wsProducts.getCell('B5').value = "Tanggal Cetak: " + reportDate;
+  wsProducts.getCell('B5').value = "Periode: " + pLabel + " | Tanggal Cetak: " + reportDate;
 
   wsProducts.getRow(7).values = ["Peringkat", "Nama Produk", "Jumlah Terjual"];
   wsProducts.getRow(7).font = { bold: true };
@@ -993,11 +1182,12 @@ async function exportReportExcel() {
   saveFileMobile(new Blob([bufferOut2]), "Laporan_Penjualan_HelloCoffee.xlsx");
 }
 
-function exportReportPDF() {
+function exportReportPDF(sDate, eDate, pLabel) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
   
-  const txns = DB.transactions.filter(t => t.status === 'completed');
+  let txns = DB.transactions.filter(t => t.status === 'completed');
+  txns = getFilteredTransactions(txns, sDate, eDate);
   if (txns.length === 0) { showToast('Tidak ada data laporan!', 'error'); return; }
   
   const totalRev = txns.reduce((s,t) => s+t.total, 0);
@@ -1034,13 +1224,16 @@ function exportReportPDF() {
   doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
   doc.text("Laporan Penjualan Keseluruhan", 105, 48, null, null, "center");
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text("Periode: " + pLabel, 105, 54, null, null, "center");
   
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
-  doc.text(`Total Pendapatan: ${formatRupiah(totalRev)}`, 14, 58);
-  doc.text(`Keuntungan Bersih: ${formatRupiah(totalProfit)}`, 14, 64);
-  doc.text(`Total Transaksi: ${txns.length}`, 14, 70);
-  doc.text(`Rata-rata Transaksi: ${formatRupiah(Math.round(totalRev/txns.length))}`, 14, 76);
+  doc.text(`Total Pendapatan: ${formatRupiah(totalRev)}`, 14, 62);
+  doc.text(`Keuntungan Bersih: ${formatRupiah(totalProfit)}`, 14, 68);
+  doc.text(`Total Transaksi: ${txns.length}`, 14, 74);
+  doc.text(`Rata-rata Transaksi: ${formatRupiah(Math.round(totalRev/txns.length))}`, 14, 80);
   
   // Top products
   const prodCount = {};
@@ -1049,11 +1242,11 @@ function exportReportPDF() {
 
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
-  doc.text("Produk Terlaris:", 14, 88);
+  doc.text("Produk Terlaris:", 14, 92);
   doc.autoTable({
     head: [['Nama Produk', 'Jumlah Terjual']],
     body: topProds,
-    startY: 92,
+    startY: 96,
     theme: 'grid',
     styles: { fontSize: 8 }
   });
